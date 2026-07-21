@@ -104,12 +104,12 @@ export default async function RootLayout({
                   </a>
                 </>
               ) : (
-                <Link
+                <a
                   href="/signin"
                   className="rounded-sm bg-brand px-3 py-1.5 font-bold text-white hover:bg-brand-hover"
                 >
                   Sign in with eGovPH
-                </Link>
+                </a>
               )}
             </nav>
           </div>

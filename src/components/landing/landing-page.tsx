@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ButtonLink, cn } from '@/components/ui'
+import { ButtonAnchor, ButtonLink, cn } from '@/components/ui'
 
 /**
  * eSee LGU marketing landing page.
@@ -227,9 +227,9 @@ export function LandingPage() {
               point of government oversight.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <ButtonLink href={OFFICER_SIGNIN} className="h-12 px-6 text-base">
+              <ButtonAnchor href={OFFICER_SIGNIN} className="h-12 px-6 text-base">
                 Officer sign-in
-              </ButtonLink>
+              </ButtonAnchor>
               <ButtonLink href="#how" variant="secondary" className="h-12 px-6 text-base">
                 See how it works
               </ButtonLink>
@@ -448,7 +448,7 @@ export function LandingPage() {
             </h2>
             <div className="space-y-3">
               {GET_STARTED.map((item) => (
-                <Link
+                <a
                   key={item.title}
                   href={item.href}
                   className="flex items-center gap-4 rounded-md border border-border p-4 transition-colors hover:bg-brand-soft"
@@ -460,7 +460,7 @@ export function LandingPage() {
                     <span className="block text-sm font-bold text-foreground">{item.title}</span>
                     <span className="block text-sm text-muted">{item.body}</span>
                   </span>
-                </Link>
+                </a>
               ))}
             </div>
           </div>
@@ -482,9 +482,9 @@ export function LandingPage() {
               <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
                 Your LGU or barangay
               </div>
-              <ButtonLink href={OFFICER_SIGNIN} className="h-11 w-full text-base">
+              <ButtonAnchor href={OFFICER_SIGNIN} className="h-11 w-full text-base">
                 Request onboarding
-              </ButtonLink>
+              </ButtonAnchor>
             </div>
           </div>
         </div>
