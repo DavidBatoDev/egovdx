@@ -4,6 +4,8 @@ import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
 import { Badge, SourceBadge } from '@/components/ui'
+import { supabaseAdmin } from '@/lib/supabase/server'
+import type { Lgu } from '@/lib/supabase/types'
 
 export const metadata: Metadata = {
   title: 'eSee LGU — Configuration layer for eLGU',
@@ -17,6 +19,27 @@ export default async function RootLayout({
   // Reading the session here means every page gets the right nav without each
   // one having to ask. Cheap: it's a cookie read plus a JWT verify.
   const session = await getSession().catch(() => null)
+  let lgu: Pick<Lgu, 'name' | 'type'> | null = null
+  if (session?.role === 'officer' && session.lguId) {
+    try {
+      const { data } = await supabaseAdmin()
+        .from('lgus')
+        .select('name, type')
+        .eq('id', session.lguId)
+        .maybeSingle()
+      lgu = data
+    } catch {
+      // A temporary database failure should not make the shared app shell fail.
+      lgu = null
+    }
+  }
+  const workspaceName = lgu
+    ? lgu.type === 'barangay'
+      ? `Barangay ${lgu.name}`
+      : lgu.type === 'city'
+        ? `${lgu.name.replace(/^City of\s+/i, '').replace(/\s+City$/i, '')} City`
+        : lgu.name
+    : null
 
   return (
     <html lang="en" className="h-full antialiased">
@@ -50,9 +73,8 @@ export default async function RootLayout({
 
               {session?.role === 'officer' ? (
                 <>
-                  <Link href="/console" className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft">Officer console</Link>
-                  <Link href="/console/studio" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft md:inline-flex">AI Studio</Link>
-                  <Link href="/console/requests" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft lg:inline-flex">Approvals</Link>
+                  <Link href="/console" className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft">LGU workspace</Link>
+                  {workspaceName ? <span className="hidden border-l border-border pl-3 text-sm font-semibold text-foreground lg:inline">{workspaceName}</span> : null}
                 </>
               ) : null}
 
