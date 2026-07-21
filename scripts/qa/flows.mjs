@@ -207,19 +207,16 @@ export const flows = [
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
     async run({ page, baseUrl, shot }) {
-      if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
-        await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, `${baseUrl}/citizen/services`)
-      } else {
-        await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
-          waitUntil: 'domcontentloaded',
-        })
-        const url = page.url()
-        if (url.includes('error=')) {
-          throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
-        }
+      await visit(page, `${baseUrl}/`)
+      await page.getByRole('link', { name: /Citizen services/i }).first().click()
+      await page.waitForURL(/\/signin/)
+      await page.getByRole('link', { name: /continue as a citizen/i }).click()
+      await page.waitForLoadState('domcontentloaded')
+      const url = page.url()
+      if (url.includes('error=')) {
+        throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
       }
-      const pathname = new URL(page.url()).pathname
+      const pathname = new URL(url).pathname
       if (pathname !== '/citizen/services') {
         throw new Error(`Citizen landed on ${pathname}, expected /citizen/services`)
       }

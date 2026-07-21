@@ -1,4 +1,4 @@
-import { ButtonLink, Card, CardBody, PageHeader, Badge } from '@/components/ui'
+import { ButtonAnchor, Card, CardBody, PageHeader, Badge } from '@/components/ui'
 import { egovMode } from '@/lib/egov/client'
 
 export const metadata = { title: 'Sign in — eSee LGU' }
@@ -59,9 +59,9 @@ export default async function SignInPage({
 
       <Card>
         <CardBody className="space-y-4">
-          <ButtonLink href={q('citizen')} className="w-full">
+          <ButtonAnchor href={q('citizen')} className="w-full">
             Continue as a citizen
-          </ButtonLink>
+          </ButtonAnchor>
           <p className="text-sm text-muted">
             Request a barangay clearance, certificate of indigency, or business permit
             endorsement from your barangay.
@@ -70,12 +70,12 @@ export default async function SignInPage({
           <div className="h-px bg-border" />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <ButtonLink href={q('officer')} variant="secondary">
+            <ButtonAnchor href={q('officer')} variant="secondary">
               LGU / barangay officer
-            </ButtonLink>
-            <ButtonLink href={q('reviewer')} variant="secondary">
+            </ButtonAnchor>
+            <ButtonAnchor href={q('reviewer')} variant="secondary">
               DICT reviewer
-            </ButtonLink>
+            </ButtonAnchor>
           </div>
           <p className="text-sm text-muted">
             Officers configure their own services within DICT-approved bounds. Reviewers
