@@ -32,6 +32,24 @@ npx next build        # ONLY as part of committing
 The reason is time, not principle: this is a deadline build, and a full
 production build repeated between every edit is minutes of nothing.
 
+## Working on a feature
+
+Five people build in parallel. Features are developed in isolation at
+`/implementation/<slug>`, then wired into the real `/app` routes.
+
+**The rule: real logic goes in `src/lib/`. The harness page at
+`/implementation/<slug>` only calls it and shows the result.** If logic lives
+inside a page component, unification means rewriting it.
+
+- Ownership, status, and the dependency graph:
+  `src/app/implementation/manifest.ts` (renders at `/implementation`)
+- Reference harness to copy: `src/app/implementation/egov-sso/page.tsx`
+- Full guide: `docs/04_implementation_workflow.md`
+
+Freeze your exported types and function signatures early, returning mock data —
+that unblocks everyone downstream immediately. A dependency counts as satisfied
+when its contract is frozen (`ready`), not when it's finished.
+
 ## Commands
 
 ```bash
