@@ -16,6 +16,10 @@ supports resumable identity verification, arbitrary generated fields, private
 evidence uploads, fee or waiver completion, submission, and
 `/track/[requestId]`. The focused citizen integration suite passes 7/7 checks.
 
+There is no remaining owned implementation work. Jasmin's remaining team duty
+is the final mobile/recording visual pass after any integration-mode changes;
+those changes must not remove or soften live/mock source labels.
+
 ## Why your work carries more weight than the 10%
 
 UI/UX is only 10% of the rubric, and the brief admits an officer-facing config

@@ -155,7 +155,7 @@ export const FEATURES: Feature[] = [
     slug: 'validation-rules',
     name: 'Bounded validation & flagging',
     owner: 'David',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Checks a generated config against its DICT template. Conforming services publish fast; anomalies route to a human.',
     dependsOn: [],
@@ -168,7 +168,7 @@ export const FEATURES: Feature[] = [
     slug: 'doc-extract',
     name: 'Paper form extraction',
     owner: 'David',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Upload an existing paper form as an alternative to prompting. Extractor returns HTML, which we parse into fields.',
     dependsOn: ['ai-studio'],

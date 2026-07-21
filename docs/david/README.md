@@ -8,6 +8,23 @@
 
 ---
 
+## Current delivery status
+
+| Task | Status | Remaining |
+|---|---|---|
+| Credentials and probes | Implemented | Run the final authoritative seven-service probe with the current credentials and record status/response keys. Do not print tokens or PII. |
+| AI eService Studio | `unified` | Perform one controlled live eGov AI generation and one forced OpenAI fallback, then enable production live mode only if both behave as documented. |
+| Bounded validation and DICT review | `unified` | None. Both prompt and upload previews are revalidated before the transactional save. |
+| Paper form extraction | `unified` | Covered by the Studio upload flow; live extractor certification is part of the AI live check above. |
+| Supabase and Vercel deployment | Complete | Keep production variables synchronized after any integration-mode change. |
+
+The application is deployed at [egovdx.vercel.app](https://egovdx.vercel.app).
+Production deliberately remains in `EGOV_AI_MODE=mock` until the controlled
+live proof succeeds; the implementation already supports eGov AI → OpenAI →
+explicit error routing.
+
+---
+
 ## Task 0 — credentials and probe (22:30, before anything else)
 
 Four people are idle-ish until this lands, so it comes first.

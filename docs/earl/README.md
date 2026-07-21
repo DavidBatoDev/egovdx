@@ -94,10 +94,11 @@ the account from `EGOV_CHAIN_PRIVATE_KEY`, signs locally with `viem`, and submit
 the transaction through the public RPC. The PDF hash is transaction calldata on
 a zero-value, zero-gas-price transaction to the zero address.
 
-This path is implemented but not yet certified live: the committed environment
-template deliberately defaults `EGOV_CHAIN_MODE=mock`. A successful live probe
-must capture the transaction hash and confirm its calldata before this task is
-called live-complete.
+This path is certified live. Transaction
+`0x2087fc017308eca297d5595ef15ec58ad731682331cba20f7af236aa4c5d9171`
+was confirmed in block `157496`; its calldata matched the submitted PDF hash,
+and the block timestamp was retrieved. The committed environment template still
+defaults to mock for safe local setup, while production uses live chain mode.
 
 ### Verification reads it back
 

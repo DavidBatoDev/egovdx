@@ -8,6 +8,26 @@
 
 ---
 
+## Current delivery status
+
+The identity contracts and production routes are unified. Mock officer,
+reviewer, and citizen sessions pass browser QA; the citizen application sends
+the SDK `session_id` to eVerify and persists the verified source honestly.
+
+Remaining required work:
+
+1. Add the dedicated `/implementation/everify` harness required by the project
+   definition of done. The real `/api/everify/verify` and citizen flow already
+   exercise the adapter, but the standalone harness is still missing.
+2. Mint a fresh, single-use `exchange_code` and run one controlled live chain:
+   SSO profile → eVerify Face Liveness SDK → `/api/query`.
+3. Update the officer seed/binding with the returned live `data.uniqid`, then
+   enable each identity integration independently only after its check passes.
+
+Production stays in explicit mock mode until that certification is recorded.
+
+---
+
 ## Read this first
 
 You have the **longest serial chain in the build**, and it got longer than we
@@ -213,12 +233,14 @@ apply form until `VerifiedIdentity` is fixed.
 
 ### Shared delivery
 
-- [ ] Freeze and commit the three exported contracts — contracts and mocks exist, but they are not committed yet.
+- [x] Freeze and commit the three exported contracts.
 - [x] Keep calls behind callEgov() and EGOV_*_MODE flags.
 - [x] Show <SourceBadge> for mock/fallback results.
-- [ ] Keep all harnesses working and wire them into real routes — SSO and face-liveness are wired; an eVerify implementation harness is still
-  missing.
-- [ ] Add/update QA, typecheck, and mark unified — QA flow and tsc are done; the new QA flow still needs a successful run in mock mode before this is
+- [ ] Add the missing eVerify implementation harness. SSO and face-liveness
+  harnesses work, and all three integrations are wired into real routes.
+- [x] Add/update QA, typecheck, and mark the identity features unified.
+- [ ] Complete and record the controlled live identity-chain proof with a fresh
+  exchange code.
 
 ### 1. Simplified SSO authentication
 

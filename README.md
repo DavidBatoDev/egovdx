@@ -13,6 +13,8 @@ Production: [egovdx.vercel.app](https://egovdx.vercel.app)
 
 - **David:** AI Studio, document extraction, bounded validation, DICT review,
   generation caching, persistence, probes, and deployment.
+- **Joshua:** server-side eGovPH SSO exchange, role sessions, Face Liveness SDK,
+  standalone liveness checks, and eVerify-backed identity prefill.
 - **Jasmin:** eSee LGU brand system, native eGovPH citizen shell, dynamic LGU
   catalog, liveness/eVerify application flow, evidence upload, and tracking.
 - **Earl:** PDF issuance, immutable storage, SHA-256 hashing, confirmed live
@@ -23,6 +25,14 @@ Production: [egovdx.vercel.app](https://egovdx.vercel.app)
 
 The workflow now begins in the dynamic citizen catalog and continues through
 identity, application, payment, approval, issuance, and public verification.
+
+## Remaining work
+
+No core application feature remains unbuilt. Before final recording, complete
+the controlled live checks for David's AI adapter, Joshua's identity chain, and
+Elton's Pay/eMessage adapters; add Joshua's dedicated eVerify implementation
+harness; then rerun production browser QA. Jasmin and Earl have no remaining
+owned implementation work.
 
 ## Important routes
 
