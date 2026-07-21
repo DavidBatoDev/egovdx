@@ -61,6 +61,18 @@ export const FEATURES: Feature[] = [
     apis: [],
   },
   {
+    slug: 'landing',
+    name: 'Marketing landing page',
+    owner: 'Jasmin',
+    status: 'building',
+    summary:
+      'DICT/LGU decision-maker landing page: hero, the bounded-config pitch, how-it-works, cost-benefit, and officer sign-in CTAs — built from the woven-band brand kit.',
+    dependsOn: ['brandkit'],
+    owns: ['src/components/landing/', 'src/app/implementation/landing/'],
+    provides: ['<LandingPage /> — drop onto a real route to unify'],
+    apis: [],
+  },
+  {
     slug: 'egov-shell',
     name: 'Mock eGovPH app shell',
     owner: 'Jasmin',

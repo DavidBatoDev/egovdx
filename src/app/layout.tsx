@@ -22,27 +22,20 @@ export default async function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         {/*
-         * Nav is Royal Blue with white text — the "eGovPH family" signal. DICT
-         * and eGovPH marks come first as institutional endorsement, ahead of
-         * the product wordmark, per esee_lgu_design_system.md "Logo Usage".
-         * Both logos are mostly blue/dark artwork that disappears against
-         * Royal Blue, so each sits on its own small white chip — the doc's
-         * own suggested fix for the DICT seal, extended to eGovPH for the
-         * same contrast reason. The source PNGs are never cropped or recolored.
+         * White nav with a bottom hairline. DICT and eGovPH marks come first as
+         * institutional endorsement, ahead of the product wordmark, per
+         * esee_lgu_design_system.md "Logo Usage". Both logos sit directly on the
+         * white bar; the source PNGs are never cropped or recolored.
          */}
-        <header className="bg-surface-nav">
+        <header className="border-b border-border bg-surface">
           <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
             <div className="flex items-center gap-3">
-              <span className="flex items-center rounded-sm bg-white px-1.5 py-1">
-                <Image src="/brand/dict-logo.png" alt="DICT" width={32} height={32} />
-              </span>
-              <span className="flex items-center rounded-sm bg-white px-1.5 py-1">
-                <Image src="/brand/egovph-logo.png" alt="eGovPH" width={98} height={28} />
-              </span>
-              <Link href="/" className="flex items-center gap-2 border-l border-white/25 pl-3">
-                <span className="font-bold tracking-tight text-white">eSee LGU</span>
+              <Image src="/brand/dict-logo.png" alt="DICT" width={32} height={32} />
+              <Image src="/brand/egovph-logo.png" alt="eGovPH" width={98} height={28} />
+              <Link href="/" className="flex items-center gap-2 border-l border-border pl-3">
+                <span className="font-bold tracking-tight text-brand">eSee LGU</span>
               </Link>
-              <span className="hidden text-xs text-white/70 sm:inline">
+              <span className="hidden text-xs text-muted sm:inline">
                 · Republic of the Philippines
               </span>
             </div>
@@ -51,7 +44,7 @@ export default async function RootLayout({
               {session?.role === 'officer' ? (
                 <Link
                   href="/console"
-                  className="rounded-sm px-3 py-1.5 font-bold text-white hover:bg-white/10"
+                  className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft"
                 >
                   Officer console
                 </Link>
@@ -60,7 +53,7 @@ export default async function RootLayout({
               {session?.role === 'reviewer' ? (
                 <Link
                   href="/review"
-                  className="rounded-sm px-3 py-1.5 font-bold text-white hover:bg-white/10"
+                  className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft"
                 >
                   DICT review
                 </Link>
@@ -69,13 +62,13 @@ export default async function RootLayout({
               {session ? (
                 <>
                   <span className="hidden items-center gap-2 px-2 sm:flex">
-                    <span className="text-white/70">{session.name}</span>
-                    <Badge tone="accent">{session.role}</Badge>
+                    <span className="text-muted">{session.name}</span>
+                    <Badge tone="brand">{session.role}</Badge>
                     {session.ssoSource ? <SourceBadge source={session.ssoSource} /> : null}
                   </span>
                   <a
                     href="/api/auth/egov/logout"
-                    className="rounded-sm px-3 py-1.5 text-white/70 hover:bg-white/10"
+                    className="rounded-sm px-3 py-1.5 text-muted hover:bg-brand-soft"
                   >
                     Sign out
                   </a>
@@ -83,7 +76,7 @@ export default async function RootLayout({
               ) : (
                 <Link
                   href="/signin"
-                  className="rounded-sm border border-white bg-white px-3 py-1.5 font-bold text-brand hover:bg-brand-soft"
+                  className="rounded-sm bg-brand px-3 py-1.5 font-bold text-white hover:bg-brand-hover"
                 >
                   Sign in with eGovPH
                 </Link>
