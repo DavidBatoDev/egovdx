@@ -197,8 +197,94 @@ export const flows = [
         throw new Error('Verification page requires a session — it must be public')
       }
 
+      await page.getByRole('heading', { name: /verify a document/i }).waitFor()
       await shot('verify')
       return 'public and reachable'
+    },
+  },
+
+  {
+    id: 'verify-reject',
+    name: 'Public verification — unknown document shows rejection',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/verify/00000000-0000-0000-0000-000000000000`)
+      await page.getByText(/document not verified/i).waitFor({ timeout: 10_000 })
+      await shot('verify-rejected')
+      return 'unknown document rejected'
+    },
+  },
+
+  {
+    id: 'doc-issuance-harness',
+    name: 'Doc issuance harness — PDF generates with hash',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/doc-issuance`)
+      await page.getByText(/control number/i).first().waitFor({ timeout: 15_000 })
+      await page.getByText(/sha-256/i).first().waitFor()
+      const body = await page.locator('body').innerText()
+      if (body.toLowerCase().includes('error') && body.includes('danger')) {
+        throw new Error('Harness page shows an error state')
+      }
+      await shot('doc-issuance')
+      return 'PDF hash rendered'
+    },
+  },
+
+  {
+    id: 'egov-chain-harness',
+    name: 'eGOV chain harness — anchor and verify round-trip',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/egov-chain`)
+      await page.getByText(/transaction hash/i).waitFor({ timeout: 15_000 })
+      const body = await page.locator('body').innerText()
+      if (!body.includes('Hash matches') && !body.includes('local fallback')) {
+        throw new Error('Expected anchor/verify result on harness page')
+      }
+      await shot('egov-chain')
+      return body.includes('Hash matches') ? 'hash matches' : 'local fallback (mock mode)'
+    },
+  },
+
+  {
+    id: 'verify-qr-harness',
+    name: 'Verify QR harness — links to live verify routes',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/verify-qr`)
+      await page.getByRole('heading', { name: /public qr verification/i }).waitFor()
+      await page.getByRole('link', { name: /open/i }).first().waitFor()
+      await shot('verify-qr-harness')
+      return 'harness documents verify flow'
+    },
+  },
+
+  {
+    id: 'verify-upload',
+    name: 'Verify upload — PDF hash computed in browser',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/verify`)
+      await page.getByText(/upload pdf/i).waitFor()
+
+      // Minimal valid PDF bytes — enough for SHA-256 in the browser.
+      const pdfBytes = Buffer.from(
+        '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+          '2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\n' +
+          'xref\n0 3\n0000000000 65535 f \ntrailer<</Root 1 0 R/Size 3>>\nstartxref\n%%EOF',
+      )
+      const fileInput = page.locator('input[type="file"]').first()
+      await fileInput.setInputFiles({
+        name: 'test-doc.pdf',
+        mimeType: 'application/pdf',
+        buffer: pdfBytes,
+      })
+
+      await page.getByText(/sha-256 of uploaded file/i).waitFor({ timeout: 10_000 })
+      await shot('verify-upload-hash')
+      return 'browser hash computed'
     },
   },
 

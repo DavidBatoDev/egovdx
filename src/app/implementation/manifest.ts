@@ -177,7 +177,7 @@ export const FEATURES: Feature[] = [
     slug: 'doc-issuance',
     name: 'Automated PDF issuance',
     owner: 'Earl',
-    status: 'todo',
+    status: 'building',
     summary:
       "On approval, fills the LGU's template with verified data — letterhead, seal, control number, QR. Officer retypes nothing.",
     dependsOn: [],
@@ -190,7 +190,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-chain',
     name: 'Blockchain anchoring',
     owner: 'Earl',
-    status: 'todo',
+    status: 'building',
     summary:
       'Anchors each issued PDF hash on-chain so a bank or employer can confirm authenticity without calling the barangay.',
     dependsOn: ['doc-issuance'],
@@ -203,7 +203,7 @@ export const FEATURES: Feature[] = [
     slug: 'verify-qr',
     name: 'Public QR verification',
     owner: 'Earl',
-    status: 'todo',
+    status: 'building',
     summary:
       'Scan the QR on any issued document and see it confirmed or rejected, including the tamper case. The 30-second demo loop.',
     dependsOn: ['egov-chain'],

@@ -14,9 +14,10 @@ import { callEgov, type EgovResult } from './client'
  * certificates are a known problem, and the receiving party — a bank, an
  * employer, a school — currently has no way to check. This closes that.
  *
- * NOTE: the catalog publishes no endpoint list for this API, so the JSON-RPC
- * methods below are standard Ethereum ones that any Besu node exposes. Run
- * scripts/probe.ts to confirm before flipping EGOV_CHAIN_MODE to live.
+ * NOTE: eth_sendTransaction requires an unlocked account on the node. The
+ * hackathon node exposes no such account (eth_accounts → []). We therefore
+ * sign the transaction locally with a private key from env and submit via
+ * eth_sendRawTransaction — which is the correct path on any public node.
  */
 
 export type AnchorResult = {
@@ -61,27 +62,52 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   }
 }
 
+/**
+ * Sign and submit a raw transaction anchoring the document hash in calldata.
+ * Uses viem for signing only; submits via eth_sendRawTransaction to avoid
+ * chain-type requirements on the viem wallet client.
+ */
+async function sendRawAnchorTransaction(docHash: string): Promise<string> {
+  const privateKey = process.env.EGOV_CHAIN_PRIVATE_KEY
+  if (!privateKey) throw new Error('EGOV_CHAIN_PRIVATE_KEY is not set')
+
+  const { privateKeyToAccount } = await import('viem/accounts')
+  const { defineChain, createWalletClient, http } = await import('viem')
+
+  const rpcUrl = process.env.EGOV_CHAIN_RPC_URL!
+
+  const egovChain = defineChain({
+    id: 13371,
+    name: 'eGOV Hackathon',
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: { default: { http: [rpcUrl] } },
+  })
+
+  const account = privateKeyToAccount(privateKey as `0x${string}`)
+
+  // Get the sender's nonce.
+  const nonceHex = await rpc<string>('eth_getTransactionCount', [account.address, 'pending'])
+
+  const client = createWalletClient({ account, chain: egovChain, transport: http(rpcUrl) })
+
+  const txHash = await client.sendTransaction({
+    to: '0x0000000000000000000000000000000000000000',
+    value: 0n,
+    data: `0x${docHash}` as `0x${string}`,
+    gas: 100_000n,
+    gasPrice: 0n,
+    nonce: parseInt(nonceHex, 16),
+  })
+
+  return txHash
+}
+
 /** Anchor a document hash as transaction calldata. */
 export async function anchorHash(docHash: string): Promise<EgovResult<AnchorResult>> {
   return callEgov<AnchorResult>(
     'CHAIN',
     async () => {
-      const accounts = await rpc<string[]>('eth_accounts', [])
-      const from = accounts[0]
-      if (!from) {
-        throw new Error('Besu node exposed no unlocked account to send from')
-      }
-
-      const txHash = await rpc<string>('eth_sendTransaction', [
-        {
-          from,
-          // Burn address: we are storing data, not transferring value.
-          to: '0x0000000000000000000000000000000000000000',
-          value: '0x0',
-          data: `0x${docHash}`,
-        },
-      ])
-
+      const txHash = await sendRawAnchorTransaction(docHash)
       return { txHash, onChain: true }
     },
     () => ({ txHash: localReceipt(docHash), onChain: false }),
@@ -121,8 +147,8 @@ export async function verifyAnchor(
 }
 
 /**
- * Deterministic stand-in so the demo has a stable, checkable reference when the
- * chain is unreachable. It is derived from the document hash, so it still
+ * Deterministic stand-in so the demo has a stable, checkable reference when
+ * the chain is unreachable. It is derived from the document hash, so it still
  * detects tampering — but it proves nothing about a distributed ledger, and the
  * UI labels it as unanchored rather than showing a green check.
  */
