@@ -17,7 +17,7 @@ export const runtime = 'nodejs'
  *
  * SSO tells us WHO this is. The `officers` table tells us what they may do —
  * anyone without a row there is a citizen. That split is the two-role SSO story:
- * one identity provider, two very different consoles, and role assignment that
+ * one identity provider, role-specific workspaces, and role assignment that
  * stays under DICT/LGU control rather than being self-asserted at login.
  */
 export async function GET(req: NextRequest) {
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
   // the officers table:  update officers set egov_sub = '<sub>' where ...
   console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role}`)
 
-  const fallback = role === 'officer' ? '/console' : role === 'reviewer' ? '/review' : '/citizen/services'
+  const fallback = role === 'officer' ? '/lgu' : role === 'reviewer' ? '/review' : '/citizen/services'
   const response = NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))
   response.cookies.set(
     SESSION_COOKIE,

@@ -158,7 +158,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Natural-language prompt in, a complete eService schema out: fields, fee rules, required docs, approval routing.',
     dependsOn: [],
-    owns: ['src/lib/studio/', 'src/lib/egov/ai.ts', 'src/app/console/studio/'],
+    owns: ['src/lib/studio/', 'src/lib/egov/ai.ts', 'src/components/officer/studio-client.tsx'],
     provides: ['generateService(prompt, lgu) → GeneratedService'],
     apis: ['eGov AI'],
     act: 'Act 2',
@@ -240,7 +240,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Register a real LGU against the PSA geographic reference, then land on its empty service dashboard.',
     dependsOn: ['egov-sso'],
-    owns: ['src/app/console/register/', 'src/app/api/lgus/', 'supabase/seed_psgc.sql'],
+    owns: ['src/app/lgu/register/', 'src/app/api/lgus/', 'supabase/seed_psgc.sql'],
     provides: ['searchPsgc(query) → PsgcEntry[]'],
     apis: [],
     act: 'Act 1',
@@ -266,7 +266,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Requests routed to the office the service names. Approving triggers issuance, anchoring, and the SMS.',
     dependsOn: ['egov-sso'],
-    owns: ['src/app/console/requests/', 'src/app/api/requests/'],
+    owns: ['src/components/officer/request-queue.tsx', 'src/app/api/requests/'],
     provides: ['approveRequest(id, officer)'],
     apis: [],
     act: 'Act 4',
@@ -292,7 +292,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Per-service volume, completion rate, and time-to-issue for the LGU department head. CUTTABLE if time runs short.',
     dependsOn: ['approval-queue', 'brandkit'],
-    owns: ['src/app/console/analytics/'],
+    owns: ['src/components/officer/section-pages.tsx'],
     provides: [],
     apis: [],
     act: 'Act 2',

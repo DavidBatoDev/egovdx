@@ -1,11 +1,11 @@
-import { redirect } from 'next/navigation'
 import { Badge, ButtonLink, Card, CardBody, CardHeader, EmptyState, PageHeader, StatusBadge } from '@/components/ui'
-import { getSession } from '@/lib/auth/session'
+import type { Session } from '@/lib/auth/session'
 import { listRequestsForLgu, listServicesForLgu } from '@/lib/data'
 import { peso } from '@/lib/format'
+import type { OfficerLguScope } from '@/lib/lgu-scope'
 import { supabaseAdmin } from '@/lib/supabase/server'
-import { RequestQueue } from './requests/request-queue'
-import StudioClient from './studio/studio-client'
+import { RequestQueue } from './request-queue'
+import StudioClient from './studio-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,18 +20,13 @@ function Metric({ label, value, detail, tone = 'brand' }: { label: string; value
   return <Card className="overflow-hidden"><CardBody className="space-y-2 border-l-4 border-brand py-4"><Badge tone={tone}>{label}</Badge><p className="font-display text-3xl text-foreground">{value}</p><p className="text-sm text-muted">{detail}</p></CardBody></Card>
 }
 
-export default async function OfficerConsole() {
-  const session = await getSession()
-  if (!session) redirect('/signin?next=/console')
-  if (session.role !== 'officer') redirect('/')
-  if (!session.lguId) redirect('/console/register')
-
+export default async function OfficerDashboard({ session, scope }: { session: Session; scope: OfficerLguScope }) {
   const db = supabaseAdmin()
   const [{ data: lgu }, { data: officer }] = await Promise.all([
-    db.from('lgus').select('id, name, type').eq('id', session.lguId).maybeSingle(),
+    db.from('lgus').select('id, name, type').eq('id', scope.lguId).maybeSingle(),
     db.from('officers').select('office').eq('egov_sub', session.sub).eq('role', 'officer').maybeSingle(),
   ])
-  if (!lgu) redirect('/console/register')
+  if (!lgu) throw new Error('LGU_NOT_FOUND')
 
   const [services, allRequests] = await Promise.all([listServicesForLgu(lgu.id), listRequestsForLgu(lgu.id)])
   const workspaceName = lgu.type === 'barangay'
@@ -93,7 +88,7 @@ export default async function OfficerConsole() {
 
       <section id="studio" className="scroll-mt-6 space-y-4 border-t border-border pt-8">
         <PageHeader eyebrow="Create" title="AI eService Studio" description="Turn your local permit or certificate into an eGovPH-native service without configuring a workflow by hand." />
-        <StudioClient />
+        <StudioClient dashboardHref={scope.canonicalBase} />
       </section>
 
       <section id="approvals" className="scroll-mt-6 space-y-4 border-t border-border pt-8">

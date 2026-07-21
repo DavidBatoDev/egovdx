@@ -78,7 +78,7 @@ async function setQaSession(page, baseUrl, role, lguId) {
   const officer = role === 'officer'
   const reviewer = role === 'reviewer'
   let sessionLguId = lguId ?? null
-  if (officer && !sessionLguId) {
+  if (officer && lguId === undefined) {
     const { data: assignedOfficer, error } = await qaDb().from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
     if (error || !assignedOfficer) throw new Error(error?.message ?? 'Demo officer is not assigned to an LGU')
     sessionLguId = assignedOfficer.lgu_id
@@ -135,6 +135,12 @@ export async function visit(page, url, { path = new URL(url).pathname } = {}) {
   return res
 }
 
+async function visitOfficerSection(page, baseUrl, section) {
+  await visit(page, `${baseUrl}/lgu`, { path: '/lgu' })
+  const canonicalBase = new URL(page.url()).pathname.replace(/\/$/, '')
+  await visit(page, `${baseUrl}${canonicalBase}/${section}`, { path: `${canonicalBase}/${section}` })
+}
+
 export const flows = [
   {
     id: 'landing',
@@ -147,7 +153,7 @@ export const flows = [
 
       await page.getByRole('heading', { name: /choose your egovph role/i }).waitFor()
       await page.getByRole('link', { name: /citizen services/i }).waitFor()
-      await page.getByRole('link', { name: /officer console/i }).first().waitFor()
+      await page.getByRole('link', { name: /lgu workspace/i }).first().waitFor()
       await page.getByRole('link', { name: /dict review/i }).first().waitFor()
       await shot('role-gateway')
       return 'citizen, officer, and reviewer entry points rendered'
@@ -185,14 +191,14 @@ export const flows = [
 
   {
     id: 'sso-officer',
-    name: 'SSO — officer signs in and is routed to the console',
+    name: 'SSO — officer signs in and is routed to the scoped LGU workspace',
     owner: 'Joshua',
     async run({ page, baseUrl, shot }) {
       if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
         await setQaSession(page, baseUrl, 'officer')
-        await visit(page, `${baseUrl}/console`)
+        await visit(page, `${baseUrl}/lgu`)
         await shot('officer-signed-in')
-        return 'local signed test session routed to /console'
+        return 'local signed test session routed to the scoped LGU workspace'
       }
       // The login route redirects, so check where we ended up AND that the
       // destination actually rendered — a redirect into a 404 is not a pass.
@@ -204,16 +210,16 @@ export const flows = [
       if (url.includes('error=')) {
         throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
       }
-      if (!url.includes('/console')) {
-        throw new Error(`Officer landed on ${url}, expected /console`)
+      if (!new URL(url).pathname.startsWith('/lgu/')) {
+        throw new Error(`Officer landed on ${url}, expected a scoped /lgu route`)
       }
 
       const status = res?.status() ?? 0
-      if (status === 404) throw new NotBuiltError('/console', status)
-      if (status >= 400) throw new Error(`/console returned HTTP ${status}`)
+      if (status === 404) throw new NotBuiltError('/lgu', status)
+      if (status >= 400) throw new Error(`/lgu returned HTTP ${status}`)
 
       await shot('officer-signed-in')
-      return 'routed to /console'
+      return 'routed to a scoped LGU workspace'
     },
   },
 
@@ -289,14 +295,14 @@ export const flows = [
   },
 
   {
-    id: 'console',
-    name: 'Officer console — service dashboard loads',
+    id: 'lgu-workspace',
+    name: 'LGU workspace — service dashboard loads',
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
       await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console`)
-      await shot('console')
-      return 'console reachable'
+      await visit(page, `${baseUrl}/lgu`)
+      await shot('lgu-workspace')
+      return 'scoped LGU workspace reachable'
     },
   },
 
@@ -305,8 +311,8 @@ export const flows = [
     name: 'LGU onboarding — officer can open PSA-backed registration',
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
-      await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console/register`)
+      await setQaSession(page, baseUrl, 'officer', null)
+      await visit(page, `${baseUrl}/lgu/register`)
       await page.getByRole('heading', { name: /register an lgu/i }).waitFor({ timeout: 10_000 })
       await page.getByPlaceholder('e.g. Marilao').fill('Marilao')
       await page.getByRole('button', { name: /^search$/i }).click()
@@ -347,7 +353,7 @@ export const flows = [
       await seedEltonRequest(id, 'paid')
       try {
         await setQaSession(page, baseUrl, 'officer')
-        await visit(page, `${baseUrl}/console/requests`)
+        await visitOfficerSection(page, baseUrl, 'requests')
         const row = page.locator('article').filter({ hasText: 'QA Citizen 02' })
         await row.waitFor()
         await page.waitForTimeout(250)
@@ -375,7 +381,7 @@ export const flows = [
         await setQaSession(page, baseUrl, 'officer')
         let row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
         for (let attempt = 0; attempt < 6; attempt++) {
-          await visit(page, `${baseUrl}/console/requests`)
+          await visitOfficerSection(page, baseUrl, 'requests')
           row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
           if (await row.isVisible().catch(() => false)) break
           await page.waitForTimeout(2_000)
@@ -409,7 +415,7 @@ export const flows = [
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
       await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console/analytics`)
+      await visitOfficerSection(page, baseUrl, 'analytics')
       await page.getByRole('heading', { name: /service analytics/i }).waitFor()
       await shot('elton-analytics')
       return 'LGU-scoped analytics rendered'
@@ -424,7 +430,7 @@ export const flows = [
       await ensureStudioQaLgu()
       try {
         await setQaSession(page, baseUrl, 'officer', STUDIO_QA_LGU)
-        await visit(page, `${baseUrl}/console/studio`)
+        await visitOfficerSection(page, baseUrl, 'studio')
 
         const prompt = page.locator('textarea').first()
         await prompt.waitFor({ timeout: 30_000 })

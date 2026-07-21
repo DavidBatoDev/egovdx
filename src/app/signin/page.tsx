@@ -5,12 +5,12 @@ import { egovMode } from '@/lib/egov/client'
 export const metadata = { title: 'Sign in — eSee LGU' }
 
 /**
- * One identity provider, two consoles.
+ * One identity provider, role-specific government workspaces.
  *
  * In live mode all three buttons hit the same eGovPH authorize URL and the role
  * comes back from the `officers` lookup — the persona parameter is ignored.
  * In mock mode it picks which seeded persona signs in, which is what makes the
- * two-role flow demonstrable when the sandbox is unavailable.
+ * role-specific flow demonstrable when the sandbox is unavailable.
  */
 export default async function SignInPage({
   searchParams,
@@ -94,7 +94,7 @@ export default async function SignInPage({
             <div className="mt-7 space-y-4">
               <div className="rounded-xl border border-border bg-surface p-3">
                 <ButtonAnchor
-                  href={q('officer', '/console')}
+                  href={q('officer', '/lgu')}
                   className="h-12 w-full justify-start rounded-lg text-base"
                 >
                   <OfficeIcon />

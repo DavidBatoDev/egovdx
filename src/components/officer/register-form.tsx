@@ -54,7 +54,7 @@ export function RegisterLguForm({ initialResults }: { initialResults: PsgcEntry[
       })
       const body = (await response.json()) as { id?: string; error?: string }
       if (!response.ok) throw new Error(body.error ?? 'Could not register the LGU.')
-      router.push('/console')
+      router.push('/lgu')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not register the LGU.')

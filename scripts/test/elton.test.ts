@@ -82,10 +82,17 @@ async function main() {
   assert.equal(result.response.status, 200, JSON.stringify(result.data))
   assert.equal(result.data.status, 'rejected')
 
-  const queue = await fetch(`${BASE}/console/requests`, { headers: { Cookie: officer }, redirect: 'manual' })
-  const analytics = await fetch(`${BASE}/console/analytics`, { headers: { Cookie: officer }, redirect: 'manual' })
+  const entry = await fetch(`${BASE}/lgu`, { headers: { Cookie: officer }, redirect: 'manual' })
+  assert.equal(entry.status, 307)
+  const scopedPath = new URL(entry.headers.get('location')!, BASE).pathname
+  const queue = await fetch(`${BASE}${scopedPath}/requests`, { headers: { Cookie: officer }, redirect: 'manual' })
+  const analytics = await fetch(`${BASE}${scopedPath}/analytics`, { headers: { Cookie: officer }, redirect: 'manual' })
   assert.equal(queue.status, 200)
   assert.equal(analytics.status, 200)
+  const wrongScope = await fetch(`${BASE}/lgu/city/not-the-assigned-lgu/requests`, { headers: { Cookie: officer }, redirect: 'manual' })
+  assert.equal(wrongScope.status, 307)
+  assert.equal(new URL(wrongScope.headers.get('location')!, BASE).pathname, `${scopedPath}/requests`)
+  assert.equal((await fetch(`${BASE}/console`, { headers: { Cookie: officer }, redirect: 'manual' })).status, 404)
 
   const { data: issued } = await db().from('requests').select('status, issuance_status, doc_hash, chain_source, sms_status, control_number').eq('id', PAY_ID).single()
   assert.equal(issued?.status, 'issued')

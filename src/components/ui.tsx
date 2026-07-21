@@ -266,7 +266,7 @@ export function EmptyState({ title, description }: { title: string; description?
 // ------------------------------------------------------------------ tables
 
 /**
- * Tables are the primary data display for the officer console — dense and
+ * Tables are the primary data display for the officer workspace — dense and
  * scannable, favored over cards wherever rows share the same shape. Compose
  * with plain `<tr>`/`<th>`/`<td>` semantics via Th/Td so callers keep full
  * control of column content.

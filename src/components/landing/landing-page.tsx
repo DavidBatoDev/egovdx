@@ -13,7 +13,7 @@ import { ButtonAnchor, ButtonLink, cn } from '@/components/ui'
  * so unification is a one-import move.
  */
 
-const OFFICER_SIGNIN = '/signin?next=/console'
+const OFFICER_SIGNIN = '/signin?next=/lgu'
 const CITIZEN_SIGNIN = '/signin?next=/citizen/services'
 const REVIEWER_SIGNIN = '/signin?next=/review'
 
@@ -87,7 +87,7 @@ const PROBLEM_FACTS = [
 const FLOW_STEPS = ['Request', 'Verification', 'Approval', 'Fee assessment', 'Issuance']
 
 const INTEGRATIONS = [
-  { api: 'eGov PH', role: 'One sign-on for two roles — the LGU officer’s console and the citizen’s request flow.' },
+  { api: 'eGov PH', role: 'One sign-on for two roles — the officer’s scoped LGU workspace and the citizen’s request flow.' },
   { api: 'eVerify', role: 'Pulls verified name, address, and birthdate straight from PhilSys — the citizen retypes nothing.' },
   { api: 'Face Liveness', role: 'A live selfie at request time replaces the officer seeing the applicant at the counter.' },
   { api: 'eGov AI', role: 'Turns a plain-language prompt — or an uploaded paper form — into a structured eService.' },
@@ -178,7 +178,7 @@ const LIMITS = [
 
 const GET_STARTED = [
   { title: 'Citizen services', body: 'Find an LGU service and submit a verified request', href: CITIZEN_SIGNIN },
-  { title: 'Officer console', body: 'Sign in and configure a service', href: OFFICER_SIGNIN },
+  { title: 'LGU workspace', body: 'Sign in and configure a service', href: OFFICER_SIGNIN },
   { title: 'DICT review', body: 'Clear anything automated validation flags', href: REVIEWER_SIGNIN },
 ]
 
