@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { getOrCreateDraft } from '@/lib/citizen/applications'
 import { egovMode } from '@/lib/egov/client'
+import { CitizenShell } from '@/components/shell/citizen-shell'
 import { ApplicationClient } from './application-client'
 
 export const dynamic = 'force-dynamic'
@@ -13,5 +14,5 @@ export default async function ApplyPage({ params }: { params: Promise<{ serviceI
   if (session.role !== 'citizen') redirect('/')
   const draft = await getOrCreateDraft(serviceId, session).catch(() => null)
   if (!draft) redirect('/')
-  return <ApplicationClient draft={draft} identityMock={egovMode('EVERIFY') === 'mock'} />
+  return <CitizenShell active="/citizen/services"><ApplicationClient draft={draft} identityMock={egovMode('EVERIFY') === 'mock'} /></CitizenShell>
 }

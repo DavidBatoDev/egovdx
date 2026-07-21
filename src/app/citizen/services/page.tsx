@@ -42,7 +42,7 @@ export default async function ServicesPage() {
   }
 
   return (
-    <CitizenShell active="/citizen/services">
+    <CitizenShell active="/citizen/services" immersive>
       {dbError ? <Card className="border-warn/30 bg-warn-soft"><CardHeader title="Service directory is temporarily unavailable" /><CardBody><p className="text-sm text-warn">Please try again shortly.</p>{process.env.NODE_ENV === 'development' ? <p className="mt-2 font-mono text-xs text-warn">{dbError}</p> : null}</CardBody></Card> : <ServicesClient lgus={[...groups.values()]} />}
     </CitizenShell>
   )
