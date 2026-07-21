@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
     })
 
     // 2. Upload to Supabase Storage (bucket: documents).
-    const storagePath = `${requestId}.pdf`
+    // Issued documents are immutable. A content-addressed path also prevents a
+    // storage/CDN cache from returning bytes from an earlier issuance while the
+    // request row already contains the newly generated hash.
+    const storagePath = `${requestId}/${hash}.pdf`
     const { error: uploadError } = await db.storage
       .from('documents')
       .upload(storagePath, pdf, { contentType: 'application/pdf', upsert: true })
