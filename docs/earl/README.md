@@ -8,6 +8,21 @@
 
 ---
 
+## Current implementation status
+
+| Task | Status | Confirmed behavior | Remaining before strict completion |
+|---|---|---|---|
+| PDF issuance | `ready` | Generates the final PDF from verified request data, adds the LGU identity, control number, signature block and QR, hashes the final bytes, stores them at an immutable hash-addressed path, and persists issuance metadata. | Replace the random control-number suffix with an atomic sequence scoped to LGU and year; wire issuance into Elton's approval action. |
+| eGOV chain | `ready` | Locally signs a zero-value transaction for chain `13371`, submits the PDF hash as calldata, reads it back with `eth_getTransactionByHash`, and labels the deterministic fallback honestly. | Confirm a real transaction and read-back with `EGOV_CHAIN_MODE=live` and the production private key. |
+| Public verification | `unified` | Public routes resolve request IDs, PDF hashes, and control numbers; uploaded PDFs are hashed in the browser; issued documents show their LGU, control number, hash, transaction, and verification state. | Fetch and display the anchoring block timestamp. |
+
+The focused Earl suite last passed **21/21** checks, including issuance, storage
+integrity, duplicate-issuance rejection, verification lookups, and all three
+implementation harnesses. Mock-mode chain success confirms the fallback path;
+it is not evidence of a live blockchain anchor.
+
+---
+
 ## You own the single most demonstrable thing in the project
 
 ```
@@ -17,9 +32,8 @@ issue → scan → verified
 The brief calls this "the single most demonstrable thing in either concept", and
 it's the 30-second loop the reel is built around. Forged barangay clearances are
 a real, known problem, and the receiving party — a bank, an employer, a school —
-currently has no way to check. You're building the thing that closes that.
-
-Nothing blocks you. Start at 22:30.
+currently has no way to check. Earl's implementation now provides that verification
+loop, subject to the live-chain confirmation recorded above.
 
 ---
 
@@ -51,9 +65,11 @@ so it has to look like something an officer recognises.
 
 ### Hash ordering matters
 
-Generate PDF → hash the bytes → anchor → **embed a QR pointing at
-`/verify/<hash>`**. The QR contains the hash, so embedding it doesn't change the
-hash it refers to. Don't hash after embedding or you'll chase your own tail.
+Render the complete PDF, including a QR pointing at `/verify/<requestId>` → hash
+the final bytes → anchor that hash. Embedding the final hash inside the PDF would
+create a self-reference and change the bytes being hashed. The verification route
+accepts both request IDs (used by the QR) and final PDF hashes (used by uploads and
+manual verification).
 
 Upload to Supabase Storage, store the path in `requests.pdf_path` and the hash in
 `requests.doc_hash`.
@@ -70,27 +86,17 @@ Facts from `docs/API_Reference.md`:
 - Explorer: `https://hackathon-explorer.e.gov.ph` ← **show this on camera**
 - No auth on the RPC
 
-### The problem with my implementation
+### Current implementation
 
-`src/lib/egov/chain.ts` uses `eth_sendTransaction`, which requires an unlocked
-account on the node. A public hackathon node almost certainly has none, so
-`eth_accounts` will return `[]`.
+`src/lib/egov/chain.ts` no longer relies on an unlocked node account. It derives
+the account from `EGOV_CHAIN_PRIVATE_KEY`, signs locally with `viem`, and submits
+the transaction through the public RPC. The PDF hash is transaction calldata on
+a zero-value, zero-gas-price transaction to the zero address.
 
-**You need `eth_sendRawTransaction` with a locally signed transaction.** First
-thing to check:
-
-```bash
-curl -X POST https://hackathon-blockchain.e.gov.ph \
-  -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","method":"eth_accounts","params":[],"id":1}'
-```
-
-Empty result → signing path confirmed. Install `viem` (lighter than ethers),
-generate a keypair, put the private key in `EGOV_CHAIN_PRIVATE_KEY`.
-
-Anchor by putting the hash in transaction calldata, value 0, to the zero address.
-Gas price is 0, so an unfunded key still works — **verify that assumption early**,
-because if it needs funding you'll want the remaining hours to find out how.
+This path is implemented but not yet certified live: the committed environment
+template deliberately defaults `EGOV_CHAIN_MODE=mock`. A successful live probe
+must capture the transaction hash and confirm its calldata before this task is
+called live-complete.
 
 ### Verification reads it back
 
@@ -113,8 +119,9 @@ pitch. An honest fallback costs you a sentence; a fake check costs the project.
 
 ## Task 3 — public verification (`/implementation/verify-qr`)
 
-Route: `/verify/[hash]` — **public, no auth.** A bank clerk scanning a QR must
-not hit a login wall. This is the payoff shot.
+Route: `/verify/[id]` — **public, no auth.** The parameter accepts either the
+request UUID embedded in the QR or the final 64-character PDF hash. A bank clerk
+scanning a QR does not hit a login wall.
 
 Show: ✓ or ✗, the document type, issuing LGU, control number, issue date, the
 chain tx hash **linked to the explorer**, and the anchoring timestamp.
@@ -132,6 +139,10 @@ Let a visitor upload a PDF; hash it; compare. An altered document must show ✗.
 can render a green check. Showing a tampered document getting *rejected* is what
 proves the anchor is load-bearing rather than decorative, and that distinction is
 exactly what the 30% integration score is measuring.
+
+The current upload flow computes the SHA-256 hash in the browser and resolves it
+against `requests.doc_hash`; an altered file therefore reaches the rejected state.
+The remaining presentation gap is the chain anchoring timestamp.
 
 ---
 

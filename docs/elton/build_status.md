@@ -68,9 +68,10 @@ Updated after the first implementation pass.
 - Add idempotent retry/error behavior so a chain or SMS failure does not repeat
   document generation or send duplicate notifications.
 
-This work is blocked on Earl's frozen `generateDocument(request)` contract. The
-issuance module does not exist yet, so no duplicate PDF implementation was added
-under Elton's ownership.
+Earl's `generateDocument(request)`, `anchorHash()`, and `verifyAnchor()` contracts
+now exist and the standalone issuance route is tested, so this work is no longer
+blocked on Earl. Elton still needs to build the approval action that orchestrates
+those contracts with `pushSms()` and makes retries idempotent.
 
 ### Analytics (cuttable)
 
