@@ -118,11 +118,11 @@ export default async function VerifyPage({ params }: Props) {
       <Card>
         <CardHeader title="Verified Identity (eVerify / PhilSys)" />
         <CardBody className="space-y-3 text-sm">
-          <Row label="Full Name" value={payload.full_name ?? request.citizen_name ?? '—'} />
-          <Row label="Date of Birth" value={payload.birth_date ?? '—'} />
-          <Row label="Address" value={payload.full_address ?? payload.present_full_address ?? '—'} />
-          {payload.reference && (
-            <Row label="eVerify Reference" value={payload.reference} mono />
+          <Row label="Full Name" value={payload.full_name ?? payload.fullName ?? request.citizen_name ?? '—'} />
+          <Row label="Date of Birth" value={payload.birth_date ?? payload.birthdate ?? payload.date_of_birth ?? '—'} />
+          <Row label="Address" value={payload.full_address ?? payload.present_full_address ?? payload.address ?? '—'} />
+          {(payload.reference ?? payload.everifyReference) && (
+            <Row label="eVerify Reference" value={payload.reference ?? payload.everifyReference ?? '—'} mono />
           )}
         </CardBody>
       </Card>
