@@ -1,35 +1,17 @@
-import { notFound, redirect } from 'next/navigation'
-import { CitizenApplyFlow, type ApplyService } from '@/components/citizen/CitizenApplyFlow'
+import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
-import { getService } from '@/lib/data'
+import { getOrCreateDraft } from '@/lib/citizen/applications'
 import { egovMode } from '@/lib/egov/client'
+import { ApplicationClient } from './application-client'
 
-export const metadata = { title: 'Request a service — eGovDX Local' }
+export const dynamic = 'force-dynamic'
 
-export default async function ApplyPage({
-  params,
-}: {
-  params: Promise<{ serviceId: string }>
-}) {
+export default async function ApplyPage({ params }: { params: Promise<{ serviceId: string }> }) {
   const { serviceId } = await params
   const session = await getSession()
-  if (!session) redirect(`/signin?next=${encodeURIComponent(`/apply/${serviceId}`)}`)
+  if (!session) redirect(`/signin?next=/apply/${serviceId}`)
   if (session.role !== 'citizen') redirect('/')
-
-  const service = await getService(serviceId)
-  if (!service || service.status !== 'published') notFound()
-
-  const applyService: ApplyService = {
-    id: service.id,
-    lguName: service.lgu.name,
-    templateName: service.template.name,
-    description: service.template.description,
-    feeAmount: service.fee_amount,
-    requiredDocs: service.required_docs,
-    formFields: service.form_fields,
-    approvalOffice: service.approval_office,
-    livenessMode: egovMode('LIVENESS'),
-  }
-
-  return <CitizenApplyFlow service={applyService} />
+  const draft = await getOrCreateDraft(serviceId, session).catch(() => null)
+  if (!draft) redirect('/')
+  return <ApplicationClient draft={draft} identityMock={egovMode('EVERIFY') === 'mock'} />
 }

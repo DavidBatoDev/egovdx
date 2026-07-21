@@ -25,16 +25,10 @@ export async function GET(req: NextRequest) {
   const { next } = decodeState(req.nextUrl.searchParams.get('state'))
 
   if (!code) {
-    return NextResponse.redirect(
-      new URL('/signin?error=missing_exchange_code', req.nextUrl.origin),
-    )
+    return NextResponse.redirect(new URL('/signin?error=missing_exchange_code', req.nextUrl.origin))
   }
 
   const { data: profile, source } = await exchangeCode(code)
-
-  // A live-mode fallback is useful for an isolated adapter harness, but it is
-  // never sufficient to authenticate a real person. Refuse it before any role
-  // lookup or session write so a sandbox outage cannot grant fixture access.
   if (source === 'fallback') {
     return NextResponse.redirect(new URL('/signin?error=sso_unavailable', req.nextUrl.origin))
   }
@@ -65,14 +59,16 @@ export async function GET(req: NextRequest) {
   const session: Session = {
     sub: profile.sub,
     name: officer?.full_name ?? profile.fullName,
+    role,
+    lguId: officer?.lgu_id ?? null,
+    mobile: profile.mobile,
     firstName: profile.firstName,
     middleName: profile.middleName,
     lastName: profile.lastName,
     suffix: profile.suffix,
-    birthdate: profile.birthdate,
-    role,
-    lguId: officer?.lgu_id ?? null,
-    mobile: profile.mobile,
+    birthdate: profile.birthDate,
+    birthDate: profile.birthDate,
+    address: profile.address,
     ssoSource: source,
   }
 

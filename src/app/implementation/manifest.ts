@@ -52,7 +52,7 @@ export const FEATURES: Feature[] = [
     slug: 'brandkit',
     name: 'Brand kit & UI primitives',
     owner: 'Jasmin',
-    status: 'building',
+    status: 'unified',
     summary:
       'Design tokens, UI primitives, and the LGU letterhead/seal assets every issued document uses.',
     dependsOn: [],
@@ -64,7 +64,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-shell',
     name: 'Mock eGovPH app shell',
     owner: 'Jasmin',
-    status: 'todo',
+    status: 'unified',
     summary:
       'The eGovPH super-app wrapper a citizen sees: dashboard, LGUs tab, LGU search, and the live service list per LGU.',
     dependsOn: ['brandkit'],
@@ -77,7 +77,7 @@ export const FEATURES: Feature[] = [
     slug: 'citizen-apply',
     name: 'Citizen request flow UI',
     owner: 'Jasmin',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Dynamic form rendered from lgu_services.form_fields, with eVerify prefill, document upload, and submission.',
     dependsOn: ['egov-shell', 'everify', 'egov-pay'],
@@ -196,7 +196,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-chain',
     name: 'Blockchain anchoring',
     owner: 'Earl',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Anchors each issued PDF hash on-chain so a bank or employer can confirm authenticity without calling the barangay.',
     dependsOn: ['doc-issuance'],

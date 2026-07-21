@@ -142,11 +142,15 @@ export async function approveAndIssue(requestId: string, officerSub: string): Pr
       const { error } = await db.from('requests').update({
         chain_tx: anchor.data.txHash,
         chain_source: anchor.source,
+        chain_block_number: anchor.data.blockNumber,
+        chain_anchored_at: anchor.data.blockTimestamp,
       }).eq('id', requestId)
       if (error) throw new Error(error.message)
       await recordEvent(requestId, 'system', anchor.data.onChain ? 'hash_anchored' : 'hash_unanchored', {
         transaction: anchor.data.txHash,
         source: anchor.source,
+        block_number: anchor.data.blockNumber,
+        anchored_at: anchor.data.blockTimestamp,
       })
       request = (await getRequest(requestId))!
     }
@@ -194,4 +198,3 @@ export async function retryIssuedNotification(requestId: string, officerSub: str
   if (!['failed', 'unknown'].includes(request.sms_status)) throw new Error('NOT_RETRYABLE')
   return sendIssuedNotification(requestId, `officer:${officerSub}`, note.trim())
 }
-

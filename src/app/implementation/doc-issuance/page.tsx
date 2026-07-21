@@ -1,6 +1,5 @@
-import { Badge, Card, CardBody, CardHeader, PageHeader, SourceBadge } from '@/components/ui'
+import { Badge, Card, CardBody, CardHeader, PageHeader } from '@/components/ui'
 import { getFeature } from '../manifest'
-import { egovMode } from '@/lib/egov/client'
 import { generateDocument } from '@/lib/pdf/generate'
 import type { RequestWithService } from '@/lib/data'
 
@@ -53,6 +52,8 @@ function buildMockRequest(): RequestWithService {
     pdf_path: null,
     doc_hash: null,
     chain_tx: null,
+    chain_block_number: null,
+    chain_anchored_at: null,
     chain_source: null,
     sms_status: 'not_sent',
     sms_source: null,

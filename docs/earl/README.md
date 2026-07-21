@@ -13,13 +13,14 @@
 | Task | Status | Confirmed behavior | Remaining before strict completion |
 |---|---|---|---|
 | PDF issuance | `unified` | Generates the final PDF from verified request data, adds the LGU identity, atomically allocated LGU/year control number, signature block and QR, hashes the final bytes, stores them at an immutable hash-addressed path, and persists issuance metadata. Elton's approval action invokes it directly and resumes failed attempts without regenerating completed steps. | None in Earl's owned scope. |
-| eGOV chain | `ready` | Locally signs a zero-value transaction for chain `13371`, submits the PDF hash as calldata, reads it back with `eth_getTransactionByHash`, and labels the deterministic fallback honestly. | Confirm a real transaction and read-back with `EGOV_CHAIN_MODE=live` and the production private key. |
-| Public verification | `unified` | Public routes resolve request IDs, PDF hashes, and control numbers; uploaded PDFs are hashed in the browser; issued documents show their LGU, control number, hash, transaction, and verification state. | Fetch and display the anchoring block timestamp. |
+| eGOV chain | `unified` | Locally signs a zero-value transaction for chain `13371`, waits for its receipt, reads its calldata back, and fetches the containing block timestamp. Live proof transaction `0x2087fc017308eca297d5595ef15ec58ad731682331cba20f7af236aa4c5d9171` was confirmed in block `157496`. | None. |
+| Public verification | `unified` | Public routes resolve request IDs, PDF hashes, and control numbers; uploaded PDFs are hashed in the browser; issued documents show their LGU, control number, hash, transaction, block, timestamp, and verification state. | None. |
 
 The focused Earl suite passes **21/21** checks, including issuance, storage
 integrity, duplicate-issuance rejection, verification lookups, and all three
-implementation harnesses. Mock-mode chain success confirms the fallback path;
-it is not evidence of a live blockchain anchor.
+implementation harnesses. Mock-mode chain success still confirms only the
+fallback path; the live transaction above separately proves that a fresh,
+zero-balance signer can anchor and read back calldata on the zero-fee chain.
 
 ---
 

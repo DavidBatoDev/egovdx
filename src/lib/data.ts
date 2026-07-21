@@ -123,9 +123,16 @@ export async function listRequestsForLgu(lguId: string): Promise<RequestWithServ
     .from('requests')
     .select(REQUEST_JOIN)
     .in('lgu_service_id', ids)
+    .neq('status', 'draft')
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`listRequestsForLgu: ${error.message}`)
+  return (data ?? []) as unknown as RequestWithService[]
+}
+
+export async function listRequestsForCitizen(citizenSub: string): Promise<RequestWithService[]> {
+  const { data, error } = await supabaseAdmin().from('requests').select(REQUEST_JOIN).eq('citizen_sub', citizenSub).order('created_at', { ascending: false })
+  if (error) throw new Error(`listRequestsForCitizen: ${error.message}`)
   return (data ?? []) as unknown as RequestWithService[]
 }
 

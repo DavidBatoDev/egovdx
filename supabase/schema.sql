@@ -139,8 +139,8 @@ create table requests (
   liveness_passed  boolean not null default false,
   liveness_score   numeric(5,2),      -- standalone REST score; null for eVerify SDK capture
   form_data        jsonb not null default '{}'::jsonb,
-  status           text not null default 'submitted'
-                   check (status in ('submitted','approved','rejected','issued')),
+  status           text not null default 'draft'
+                   check (status in ('draft','submitted','approved','rejected','issued')),
   fee_due          numeric(10,2) not null default 0,
   fee_status       text not null default 'unpaid'
                    check (fee_status in ('unpaid','waived','paid')),
@@ -168,6 +168,8 @@ create table requests (
   pdf_path         text,
   doc_hash         text unique,         -- sha256 of the issued PDF; the QR resolves this
   chain_tx         text,
+  chain_block_number bigint,
+  chain_anchored_at timestamptz,
   chain_source     text check (chain_source is null or chain_source in ('live','mock','fallback')),
   sms_status       text not null default 'not_sent'
                    check (sms_status in ('not_sent','sending','sent','failed','unknown')),
@@ -182,6 +184,8 @@ create index on requests(lgu_service_id);
 create index on requests(status);
 create index on requests(doc_hash);
 create index on requests(payment_uuid);
+create unique index requests_one_draft_per_citizen_service
+  on requests(lgu_service_id, citizen_sub) where status = 'draft';
 
 create table lgu_control_sequences (
   lgu_id uuid not null references lgus(id) on delete cascade,

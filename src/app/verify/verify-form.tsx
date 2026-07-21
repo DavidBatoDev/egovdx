@@ -1,32 +1,14 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Button, Card, CardBody, CardHeader, Field, inputClass } from '@/components/ui'
 
-function VerifySkeleton() {
-  return (
-    <main className="mx-auto max-w-xl space-y-6 px-4 py-12">
-      <div className="animate-pulse space-y-6">
-        <div className="mx-auto h-8 w-2/3 rounded-lg bg-border" />
-        <div className="h-36 rounded-xl bg-border" />
-        <div className="h-36 rounded-xl bg-border" />
-        <div className="h-44 rounded-xl bg-border" />
-      </div>
-    </main>
-  )
-}
-
 export default function VerifyForm() {
-  const [mounted, setMounted] = useState(false)
   const [hash, setHash] = useState('')
   const [controlNumber, setControlNumber] = useState('')
   const [fileStatus, setFileStatus] = useState<'idle' | 'hashing' | 'done'>('idle')
   const [fileHash, setFileHash] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   async function handleFile(file: File) {
     setFileStatus('hashing')
@@ -43,8 +25,6 @@ export default function VerifyForm() {
       setFileStatus('idle')
     }
   }
-
-  if (!mounted) return <VerifySkeleton />
 
   return (
     <main className="mx-auto max-w-xl space-y-6 px-4 py-12">

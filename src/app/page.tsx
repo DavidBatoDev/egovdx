@@ -10,6 +10,7 @@ import {
 } from '@/components/ui'
 import { listPublishedServices, type PublishedService } from '@/lib/data'
 import { peso } from '@/lib/format'
+import { CitizenShell } from '@/components/shell/citizen-shell'
 
 export default async function HomePage() {
   let services: PublishedService[] = []
@@ -31,12 +32,14 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <CitizenShell active="/">
       <PageHeader
         eyebrow="eGovPH · eLGU services"
         title="Request a barangay document online"
         description="Your identity and address are pulled from your verified eGovPH record — you don't retype what the government already knows. Approved documents are issued as PDFs carrying a QR code anyone can verify."
       />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{['Certificates', 'Permits', 'Social assistance', 'Business'].map((category) => <div key={category} className="rounded-sm border border-border bg-brand-soft p-3 text-center text-sm font-bold text-brand">{category}</div>)}</div>
 
       {dbError ? <SetupNotice error={dbError} /> : null}
 
@@ -99,7 +102,7 @@ export default async function HomePage() {
           </Link>
         </CardBody>
       </Card>
-    </div>
+    </CitizenShell>
   )
 }
 

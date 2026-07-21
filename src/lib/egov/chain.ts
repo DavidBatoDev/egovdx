@@ -24,6 +24,8 @@ export type AnchorResult = {
   txHash: string
   /** false when we could not reach a real chain and produced a local receipt. */
   onChain: boolean
+  blockNumber: number | null
+  blockTimestamp: string | null
 }
 
 export type ChainVerification = {
@@ -31,6 +33,7 @@ export type ChainVerification = {
   txHash: string | null
   anchoredHash: string | null
   blockNumber: number | null
+  blockTimestamp: string | null
 }
 
 let rpcId = 0
@@ -90,27 +93,44 @@ async function sendRawAnchorTransaction(docHash: string): Promise<string> {
 
   const client = createWalletClient({ account, chain: egovChain, transport: http(rpcUrl) })
 
-  const txHash = await client.sendTransaction({
-    to: '0x0000000000000000000000000000000000000000',
-    value: 0n,
-    data: `0x${docHash}` as `0x${string}`,
-    gas: 100_000n,
-    gasPrice: 0n,
-    nonce: parseInt(nonceHex, 16),
-  })
+  try {
+    return await client.sendTransaction({ to: '0x0000000000000000000000000000000000000000', value: 0n, data: `0x${docHash}` as `0x${string}`, gas: 100_000n, gasPrice: 0n, nonce: parseInt(nonceHex, 16) })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!/nonce|already known|replacement/i.test(message)) throw error
+    const refreshed = await rpc<string>('eth_getTransactionCount', [account.address, 'pending'])
+    return client.sendTransaction({ to: '0x0000000000000000000000000000000000000000', value: 0n, data: `0x${docHash}` as `0x${string}`, gas: 100_000n, gasPrice: 0n, nonce: parseInt(refreshed, 16) })
+  }
+}
 
-  return txHash
+type Receipt = { status: string | null; blockNumber: string | null }
+
+async function confirmedAnchor(txHash: string, expectedHash: string): Promise<Omit<AnchorResult, 'txHash'>> {
+  let receipt: Receipt | null = null
+  for (let attempt = 0; attempt < 15; attempt++) {
+    receipt = await rpc<Receipt | null>('eth_getTransactionReceipt', [txHash])
+    if (receipt?.blockNumber) break
+    await new Promise((resolve) => setTimeout(resolve, 2_000))
+  }
+  if (!receipt?.blockNumber) throw new Error('Chain transaction was not mined within 30 seconds')
+  if (receipt.status && receipt.status !== '0x1') throw new Error('Chain transaction reverted')
+  const tx = await rpc<{ input?: string } | null>('eth_getTransactionByHash', [txHash])
+  if (!tx || tx.input?.replace(/^0x/, '').toLowerCase() !== expectedHash.toLowerCase()) throw new Error('Chain calldata read-back did not match the document hash')
+  const block = await rpc<{ timestamp?: string } | null>('eth_getBlockByNumber', [receipt.blockNumber, false])
+  const timestamp = block?.timestamp ? new Date(parseInt(block.timestamp, 16) * 1000).toISOString() : null
+  return { onChain: true, blockNumber: parseInt(receipt.blockNumber, 16), blockTimestamp: timestamp }
 }
 
 /** Anchor a document hash as transaction calldata. */
 export async function anchorHash(docHash: string): Promise<EgovResult<AnchorResult>> {
+  if (!/^[0-9a-f]{64}$/i.test(docHash)) throw new Error('Document hash must be 64 hexadecimal characters')
   return callEgov<AnchorResult>(
     'CHAIN',
     async () => {
       const txHash = await sendRawAnchorTransaction(docHash)
-      return { txHash, onChain: true }
+      return { txHash, ...(await confirmedAnchor(txHash, docHash)) }
     },
-    () => ({ txHash: localReceipt(docHash), onChain: false }),
+    () => ({ txHash: localReceipt(docHash), onChain: false, blockNumber: null, blockTimestamp: null }),
   )
 }
 
@@ -127,14 +147,16 @@ export async function verifyAnchor(
         [txHash],
       )
 
-      if (!tx) return { found: false, txHash, anchoredHash: null, blockNumber: null }
+      if (!tx) return { found: false, txHash, anchoredHash: null, blockNumber: null, blockTimestamp: null }
 
       const anchoredHash = tx.input.replace(/^0x/, '')
+      const block = tx.blockNumber ? await rpc<{ timestamp?: string } | null>('eth_getBlockByNumber', [tx.blockNumber, false]) : null
       return {
         found: anchoredHash.toLowerCase() === expectedHash.toLowerCase(),
         txHash,
         anchoredHash,
         blockNumber: tx.blockNumber ? parseInt(tx.blockNumber, 16) : null,
+        blockTimestamp: block?.timestamp ? new Date(parseInt(block.timestamp, 16) * 1000).toISOString() : null,
       }
     },
     () => ({
@@ -142,6 +164,7 @@ export async function verifyAnchor(
       txHash,
       anchoredHash: expectedHash,
       blockNumber: null,
+      blockTimestamp: null,
     }),
   )
 }

@@ -10,7 +10,7 @@ export type LguType = 'city' | 'municipality' | 'barangay'
 export type OfficerRole = 'officer' | 'reviewer'
 export type ServiceStatus = 'draft' | 'flagged' | 'published' | 'rejected'
 export type FlagSeverity = 'info' | 'warn' | 'block'
-export type RequestStatus = 'submitted' | 'approved' | 'rejected' | 'issued'
+export type RequestStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'issued'
 export type FeeStatus = 'unpaid' | 'waived' | 'paid'
 export type ProviderSource = 'live' | 'mock' | 'fallback'
 export type IssuanceStatus = 'not_started' | 'processing' | 'failed' | 'issued'
@@ -25,6 +25,14 @@ export type FormField = {
   options?: string[]
   /** 'everify' means we prefill this from verified identity data, not ask for it. */
   source?: 'everify'
+}
+
+export type UploadedDocument = {
+  path: string
+  requirement: string
+  filename: string
+  mimeType: 'image/jpeg' | 'image/png' | 'application/pdf'
+  size: number
 }
 
 export type Waiver = {
@@ -169,8 +177,8 @@ export type ServiceRequest = {
   payment_txnid: string | null
   payment_source: ProviderSource | null
   payment_checked_at: string | null
-  uploaded_docs: string[]
-  /** Standalone REST confidence out of 100; null for the documented eVerify SDK capture. */
+  uploaded_docs: UploadedDocument[]
+  /** Liveness confidence out of 100. We accept only >= 95.0. */
   liveness_score: number | null
   everify_reference: string | null
   approved_by: string | null
@@ -186,6 +194,8 @@ export type ServiceRequest = {
   pdf_path: string | null
   doc_hash: string | null
   chain_tx: string | null
+  chain_block_number: number | null
+  chain_anchored_at: string | null
   chain_source: ProviderSource | null
   sms_status: SmsStatus
   sms_source: ProviderSource | null
@@ -321,6 +331,8 @@ export type Database = {
           | 'pdf_path'
           | 'doc_hash'
           | 'chain_tx'
+          | 'chain_block_number'
+          | 'chain_anchored_at'
           | 'chain_source'
           | 'sms_status'
           | 'sms_source'
