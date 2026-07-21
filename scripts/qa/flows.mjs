@@ -206,20 +206,28 @@ export const flows = [
     id: 'sso-citizen',
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
-    async run({ page, baseUrl }) {
+    async run({ page, baseUrl, shot }) {
       if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
         await setQaSession(page, baseUrl, 'citizen')
         await visit(page, `${baseUrl}/citizen/services`)
-        return 'local signed test session established'
+      } else {
+        await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
+          waitUntil: 'domcontentloaded',
+        })
+        const url = page.url()
+        if (url.includes('error=')) {
+          throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
+        }
       }
-      await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
-        waitUntil: 'domcontentloaded',
-      })
-      const url = page.url()
-      if (url.includes('error=')) {
-        throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
+      const pathname = new URL(page.url()).pathname
+      if (pathname !== '/citizen/services') {
+        throw new Error(`Citizen landed on ${pathname}, expected /citizen/services`)
       }
-      return 'session established'
+      await page.getByRole('heading', { name: /request a local government document online/i }).waitFor()
+      await page.getByText('citizen', { exact: true }).waitFor()
+      await page.getByRole('link', { name: /sign out/i }).waitFor()
+      await shot('citizen-signed-in')
+      return 'citizen session established at /citizen/services'
     },
   },
 
