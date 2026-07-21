@@ -108,12 +108,15 @@ export const FEATURES: Feature[] = [
     slug: 'face-liveness',
     name: 'Face liveness check',
     owner: 'Joshua',
-    status: 'building',
+    status: 'ready',
     summary:
       'Browser SDK liveness capture yielding a session_id. Hard prerequisite for eVerify — not an optional extra step.',
     dependsOn: ['egov-sso'],
     owns: ['src/lib/egov/liveness.ts', 'src/components/liveness/'],
-    provides: ['createLivenessSession(), getLivenessResult() → session_id + score'],
+    provides: [
+      '<LivenessCapture onComplete(capture)> → eVerify session_id',
+      'createLivenessSession(), getLivenessResult() → standalone REST score',
+    ],
     apis: ['FACE LIVENESS'],
     act: 'Act 3',
   },

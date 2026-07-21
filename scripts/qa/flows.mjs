@@ -92,6 +92,25 @@ export async function visit(page, url, { path = new URL(url).pathname } = {}) {
 
 export const flows = [
   {
+    id: 'face-liveness',
+    name: 'Face liveness — mock SDK capture yields an eVerify session ID',
+    owner: 'Joshua',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/face-liveness`)
+      await page
+        .getByRole('heading', { level: 1, name: /face liveness/i })
+        .waitFor({ timeout: 10_000 })
+      await page.getByRole('button', { name: /start face liveness/i }).click()
+      await page.getByText('mock-everify-liveness-session', { exact: true }).waitFor({
+        timeout: 10_000,
+      })
+      await page.getByText('Mock data', { exact: true }).first().waitFor({ timeout: 10_000 })
+      await shot('mock-sdk-capture')
+      return 'mock SDK session captured and visibly badged'
+    },
+  },
+
+  {
     id: 'landing',
     name: 'Citizen landing — published services render',
     owner: 'Jasmin',

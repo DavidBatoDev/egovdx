@@ -1,60 +1,68 @@
 import 'server-only'
-import { callEgov, egovFetch, type EgovResult } from './client'
+import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 
 /**
- * FACE LIVENESS — confirms a live person is present at capture time.
+ * FACE LIVENESS — standalone REST integration.
  *
- *   POST {base}/v1/liveness/session              Create Session
- *   GET  {base}/v1/liveness/result/{sessionToken} Get Verification Result
- *
- * Checked against the CITIZEN at request time, deliberately. An indigency
- * certificate issued to an impersonator is a real fraud vector, and this is
- * what replaces the barangay officer physically seeing the person at the
- * counter. Be ready to say that in Q&A — an unjustified API on the list is
- * exactly what judges probe.
+ * This is distinct from the browser eVerify Face Liveness SDK. The SDK's
+ * session_id feeds eVerify; this API's token and confidence score never do.
  */
+
+export type LivenessAction = 'redirect' | 'post' | 'close'
+
+export type CreateLivenessSessionOptions = {
+  action: LivenessAction
+  callbackUrl?: string
+  delay?: number
+}
 
 export type LivenessSession = {
   sessionToken: string
-  /** Hosted capture page the citizen is redirected to, when the API provides one. */
   redirectUrl: string | null
 }
 
 export type LivenessResult = {
   sessionToken: string
+  /** True only when the documented status is SUCCEEDED and score is >= 95. */
   passed: boolean
-  /** 0..1 where the API reports one. */
+  /** Standalone REST confidence score, from 0 to 100. */
   confidence: number | null
   status: 'pending' | 'passed' | 'failed'
 }
 
-function authHeaders(): Record<string, string> {
-  const key = process.env.EGOV_LIVENESS_API_KEY
-  return key ? { Authorization: `Bearer ${key}`, 'x-api-key': key } : {}
-}
+const MINIMUM_CONFIDENCE = 95
 
 export async function createLivenessSession(
-  reference: string,
+  options: CreateLivenessSessionOptions,
 ): Promise<EgovResult<LivenessSession>> {
+  validateCreateOptions(options)
+
   return callEgov(
     'LIVENESS',
     async () => {
-      const raw = await egovFetch<Record<string, any>>('LIVENESS', '/v1/liveness/session', {
+      const raw = await egovFetch<StandaloneSessionResponse>('LIVENESS', '/v1/liveness/session', {
         method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ reference }),
+        headers: authHeaders('LIVENESS', livenessApiKey()),
+        body: JSON.stringify({
+          action: options.action,
+          ...(options.callbackUrl ? { callback_url: options.callbackUrl } : {}),
+          ...(options.delay === undefined ? {} : { delay: options.delay }),
+        }),
       })
 
-      const d = raw.data ?? raw
-      const sessionToken = d.sessionToken ?? d.session_token ?? d.token ?? d.sessionId
-      if (!sessionToken) throw new Error('liveness session response had no session token')
+      if (typeof raw.token !== 'string' || !raw.token) {
+        throw new Error('liveness session response had no token')
+      }
 
       return {
-        sessionToken: String(sessionToken),
-        redirectUrl: d.redirectUrl ?? d.url ?? d.captureUrl ?? null,
+        sessionToken: raw.token,
+        redirectUrl: typeof raw.url === 'string' ? raw.url : null,
       }
     },
-    () => ({ sessionToken: `mock-liveness-${reference}`, redirectUrl: null }),
+    () => ({
+      sessionToken: `mock-liveness-${options.action}`,
+      redirectUrl: options.action === 'redirect' ? options.callbackUrl ?? null : null,
+    }),
   )
 }
 
@@ -64,24 +72,56 @@ export async function getLivenessResult(
   return callEgov(
     'LIVENESS',
     async () => {
-      const raw = await egovFetch<Record<string, any>>(
+      const raw = await egovFetch<StandaloneResultResponse>(
         'LIVENESS',
         `/v1/liveness/result/${encodeURIComponent(sessionToken)}`,
-        { headers: authHeaders() },
+        { headers: authHeaders('LIVENESS', livenessApiKey()) },
       )
 
-      const d = raw.data ?? raw
-      const rawStatus = String(d.status ?? d.result ?? '').toLowerCase()
-      const passed =
-        d.passed ?? d.isLive ?? d.live ?? ['passed', 'success', 'verified'].includes(rawStatus)
+      if (typeof raw.confidence_score !== 'number') {
+        throw new Error('liveness result response had no confidence_score')
+      }
+
+      const succeeded = raw.status === 'SUCCEEDED'
+      const passed = succeeded && raw.confidence_score >= MINIMUM_CONFIDENCE
 
       return {
         sessionToken,
-        passed: Boolean(passed),
-        confidence: d.confidence ?? d.score ?? null,
-        status: passed ? 'passed' : rawStatus === 'pending' ? 'pending' : 'failed',
+        passed,
+        confidence: raw.confidence_score,
+        status: passed ? 'passed' : raw.status === 'PENDING' ? 'pending' : 'failed',
       }
     },
-    () => ({ sessionToken, passed: true, confidence: 0.97, status: 'passed' as const }),
+    () => ({
+      sessionToken,
+      passed: true,
+      confidence: 98.7,
+      status: 'passed',
+    }),
   )
+}
+
+function livenessApiKey(): string {
+  const key = process.env.EGOV_LIVENESS_API_KEY
+  if (!key) throw new Error('EGOV_LIVENESS_API_KEY must be set')
+  return key
+}
+
+function validateCreateOptions(options: CreateLivenessSessionOptions): void {
+  if (options.action === 'redirect' && !options.callbackUrl) {
+    throw new Error('callbackUrl is required when action is redirect')
+  }
+  if (options.delay !== undefined && (!Number.isInteger(options.delay) || options.delay < 0)) {
+    throw new Error('delay must be a non-negative integer')
+  }
+}
+
+type StandaloneSessionResponse = {
+  token?: unknown
+  url?: unknown
+}
+
+type StandaloneResultResponse = {
+  status?: unknown
+  confidence_score?: unknown
 }

@@ -237,14 +237,15 @@ apply form until `VerifiedIdentity` is fixed.
 
 ### 2. Face liveness
 
-- [ ] Use the eVerify Face Liveness Web SDK for the citizen verification path
+- [x] Use the eVerify Face Liveness Web SDK for the citizen verification path
   and retain its `result.session_id`.
 - [ ] Pass that `session_id` to eVerify as `face_liveness_session_id`; do not
-  substitute the standalone REST token.
-- [ ] For the standalone adapter, use lowercase `x-api-key` and accept only
+  substitute the standalone REST token. (Completed with Task 3.)
+- [x] For the standalone adapter, use lowercase `x-api-key` and accept only
   `status === "SUCCEEDED" && confidence_score >= 95.0`.
-- [ ] Persist the accepted liveness score to `requests.liveness_score`; show a
-  retry path for a rejected or cancelled check.
+- [ ] On citizen submit, persist the SDK `session_id` and `liveness_passed`.
+  The documented SDK returns no confidence score, so `liveness_score` remains
+  `null`; the capture component already shows a retry path for errors or cancellation.
 
 ### 3. eVerify
 

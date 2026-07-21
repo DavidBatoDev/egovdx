@@ -137,6 +137,7 @@ create table requests (
   everify_payload  jsonb,
   liveness_session text,
   liveness_passed  boolean not null default false,
+  liveness_score   numeric(5,2),      -- standalone REST score; null for eVerify SDK capture
   form_data        jsonb not null default '{}'::jsonb,
   status           text not null default 'submitted'
                    check (status in ('submitted','approved','rejected','issued')),

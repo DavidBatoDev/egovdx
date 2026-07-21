@@ -170,7 +170,7 @@ export type ServiceRequest = {
   payment_source: ProviderSource | null
   payment_checked_at: string | null
   uploaded_docs: string[]
-  /** Liveness confidence out of 100. We accept only >= 95.0. */
+  /** Standalone REST confidence out of 100; null for the documented eVerify SDK capture. */
   liveness_score: number | null
   everify_reference: string | null
   approved_by: string | null
