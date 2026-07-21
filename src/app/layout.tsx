@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
-import { Badge } from '@/components/ui'
+import { Badge, SourceBadge } from '@/components/ui'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
@@ -63,6 +63,7 @@ export default async function RootLayout({
                   <span className="hidden items-center gap-2 px-2 sm:flex">
                     <span className="text-muted">{session.name}</span>
                     <Badge tone="brand">{session.role}</Badge>
+                    {session.ssoSource ? <SourceBadge source={session.ssoSource} /> : null}
                   </span>
                   <Link
                     href="/api/auth/egov/logout"

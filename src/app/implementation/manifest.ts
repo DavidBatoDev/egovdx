@@ -92,9 +92,9 @@ export const FEATURES: Feature[] = [
     slug: 'egov-sso',
     name: 'eGovPH Single Sign-On',
     owner: 'Joshua',
-    status: 'building',
+    status: 'unified',
     summary:
-      'Widget-based SSO returning an exchange_code, swapped server-side for a profile. One provider, two roles.',
+      'Server-side SSO Authentication exchanges an upstream exchange_code for a profile. One provider, two roles.',
     dependsOn: [],
     owns: ['src/lib/egov/sso.ts', 'src/lib/auth/', 'src/app/api/auth/egov/'],
     provides: [

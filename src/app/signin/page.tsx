@@ -6,10 +6,10 @@ export const metadata = { title: 'Sign in — eGovDX Local' }
 /**
  * One identity provider, two consoles.
  *
- * In live mode all three buttons hit the same eGovPH authorize URL and the role
- * comes back from the `officers` lookup — the persona parameter is ignored.
- * In mock mode it picks which seeded persona signs in, which is what makes the
- * two-role flow demonstrable when the sandbox is unavailable.
+ * In live mode eGovPH (or another approved upstream) hands an exchange code to
+ * this app's callback; the published API does not define an initiation URL. In
+ * mock mode the buttons select seeded personas, keeping the two-role flow
+ * demonstrable when the sandbox is unavailable.
  */
 export default async function SignInPage({
   searchParams,
@@ -44,6 +44,24 @@ export default async function SignInPage({
                   dev server.
                 </p>
               </>
+            ) : error === 'sso_handoff_required' ? (
+              <>
+                <p className="font-medium">Start sign-in in eGovPH.</p>
+                <p>
+                  The live integration accepts the exchange code returned by the approved
+                  eGovPH handoff. This app does not guess an authorization URL.
+                </p>
+              </>
+            ) : error === 'missing_exchange_code' ? (
+              <>
+                <p className="font-medium">The eGovPH handoff did not include an exchange code.</p>
+                <p>Please start sign-in again from eGovPH.</p>
+              </>
+            ) : error === 'sso_unavailable' ? (
+              <>
+                <p className="font-medium">eGovPH sign-in is temporarily unavailable.</p>
+                <p>No local session was created. Please try the eGovPH handoff again.</p>
+              </>
             ) : (
               <p>Sign-in failed ({error}). Please try again.</p>
             )}
@@ -53,28 +71,40 @@ export default async function SignInPage({
 
       <Card>
         <CardBody className="space-y-4">
-          <ButtonLink href={q('citizen')} className="w-full">
-            Continue as a citizen
-          </ButtonLink>
-          <p className="text-sm text-muted">
-            Request a barangay clearance, certificate of indigency, or business permit
-            endorsement from your barangay.
-          </p>
+          {mock ? (
+            <>
+              <ButtonLink href={q('citizen')} className="w-full">
+                Continue as a citizen
+              </ButtonLink>
+              <p className="text-sm text-muted">
+                Request a barangay clearance, certificate of indigency, or business permit
+                endorsement from your barangay.
+              </p>
 
-          <div className="h-px bg-border" />
+              <div className="h-px bg-border" />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ButtonLink href={q('officer')} variant="secondary">
-              LGU / barangay officer
-            </ButtonLink>
-            <ButtonLink href={q('reviewer')} variant="secondary">
-              DICT reviewer
-            </ButtonLink>
-          </div>
-          <p className="text-sm text-muted">
-            Officers configure their own services within DICT-approved bounds. Reviewers
-            clear anything the automated validation flags.
-          </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ButtonLink href={q('officer')} variant="secondary">
+                  LGU / barangay officer
+                </ButtonLink>
+                <ButtonLink href={q('reviewer')} variant="secondary">
+                  DICT reviewer
+                </ButtonLink>
+              </div>
+              <p className="text-sm text-muted">
+                Officers configure their own services within DICT-approved bounds. Reviewers
+                clear anything the automated validation flags.
+              </p>
+            </>
+          ) : (
+            <div className="space-y-2 text-sm text-muted">
+              <Badge tone="accent">External eGovPH handoff</Badge>
+              <p>
+                Continue from the approved eGovPH sign-in surface. It returns a short-lived
+                exchange code to eGovDX, which resolves your role from the DICT/LGU records.
+              </p>
+            </div>
+          )}
         </CardBody>
       </Card>
 

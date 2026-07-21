@@ -15,14 +15,23 @@ export const runtime = 'nodejs'
  * stays under DICT/LGU control rather than being self-asserted at login.
  */
 export async function GET(req: NextRequest) {
-  const code = req.nextUrl.searchParams.get('code')
+  const code = req.nextUrl.searchParams.get('exchange_code')
   const { next } = decodeState(req.nextUrl.searchParams.get('state'))
 
   if (!code) {
-    return NextResponse.redirect(new URL('/signin?error=missing_code', req.nextUrl.origin))
+    return NextResponse.redirect(
+      new URL('/signin?error=missing_exchange_code', req.nextUrl.origin),
+    )
   }
 
   const { data: profile, source } = await exchangeCode(code)
+
+  // A live-mode fallback is useful for an isolated adapter harness, but it is
+  // never sufficient to authenticate a real person. Refuse it before any role
+  // lookup or session write so a sandbox outage cannot grant fixture access.
+  if (source === 'fallback') {
+    return NextResponse.redirect(new URL('/signin?error=sso_unavailable', req.nextUrl.origin))
+  }
 
   // Roles come from the database, so an unreachable database means we cannot
   // say what this person is allowed to do. Failing closed with a clear message
@@ -53,6 +62,7 @@ export async function GET(req: NextRequest) {
     role,
     lguId: officer?.lgu_id ?? null,
     mobile: profile.mobile,
+    ssoSource: source,
   })
 
   // Logged so that after a first real SSO login you can copy the subject into

@@ -1,6 +1,7 @@
 import 'server-only'
 import { cookies } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
+import type { EgovSource } from '@/lib/egov/client'
 
 /**
  * Session = a signed JWT in an httpOnly cookie.
@@ -23,6 +24,8 @@ export type Session = {
   /** Set for officers; null for citizens and DICT reviewers. */
   lguId: string | null
   mobile: string | null
+  /** Source of the SSO profile used to establish this session. */
+  ssoSource: EgovSource | null
 }
 
 function secret(): Uint8Array {
@@ -65,10 +68,15 @@ export async function getSession(): Promise<Session | null> {
       role: (payload.role as SessionRole) ?? 'citizen',
       lguId: (payload.lguId as string | null) ?? null,
       mobile: (payload.mobile as string | null) ?? null,
+      ssoSource: isEgovSource(payload.ssoSource) ? payload.ssoSource : null,
     }
   } catch {
     return null // expired or tampered — treat as signed out
   }
+}
+
+function isEgovSource(value: unknown): value is EgovSource {
+  return value === 'live' || value === 'mock' || value === 'fallback'
 }
 
 export async function clearSession(): Promise<void> {

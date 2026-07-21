@@ -1,20 +1,12 @@
 import 'server-only'
-import { callEgov, egovFetch, getAccessToken, type EgovResult } from './client'
+import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 
 /**
  * eGOV PH — Single sign-on.
  *
- *   POST {base}/api/token                      Generate Access Token (partner-level)
- *   POST {base}/api/partner/sso_authentication SSO Authentication (exchange user code)
- *
- * Two distinct roles enter through this one integration: a citizen signing into
- * the request flow, and an LGU/barangay officer signing into the config
- * console. SSO establishes identity; the `officers` table decides which console
- * that identity may open.
- *
- * The catalog does not publish the authorize-redirect URL, only these two POST
- * endpoints, so buildAuthorizeUrl below is a best guess. Confirm against the
- * Postman collection — the rest of the flow is unaffected by getting it wrong.
+ * The documented SSO contract starts after an upstream eGovPH handoff has
+ * issued an exchange code. This app does not own or guess that browser flow:
+ * it exchanges the short-lived code server-side, then resolves the profile.
  */
 
 export type EgovProfile = {
@@ -25,51 +17,47 @@ export type EgovProfile = {
   raw: Record<string, unknown>
 }
 
-/** Partner-level token, cached. Not the citizen's token. */
-async function partnerToken(): Promise<string> {
-  return getAccessToken('SSO', async () => {
-    const res = await egovFetch<Record<string, any>>('SSO', '/api/token', {
-      method: 'POST',
-      body: JSON.stringify({
-        client_id: process.env.EGOV_SSO_CLIENT_ID,
-        client_secret: process.env.EGOV_SSO_CLIENT_SECRET,
-      }),
-    })
-
-    const token = res.access_token ?? res.token ?? res.data?.access_token
-    if (!token) throw new Error('eGovPH /api/token returned no access token')
-
-    return { token, expiresInSeconds: res.expires_in ?? 3600 }
-  })
+type SsoTokenResponse = {
+  access_token?: unknown
 }
 
-export function buildAuthorizeUrl(state: string): string {
-  const base = process.env.EGOV_SSO_BASE_URL?.replace(/\/$/, '') ?? ''
-  const params = new URLSearchParams({
-    client_id: process.env.EGOV_SSO_CLIENT_ID ?? '',
-    redirect_uri: process.env.EGOV_SSO_REDIRECT_URI ?? '',
-    response_type: 'code',
-    scope: 'openid profile',
-    state,
-  })
-  return `${base}/authorize?${params}`
+function partnerCredentials(): { partnerCode: string; partnerSecret: string } {
+  const partnerCode = process.env.EGOV_SSO_PARTNER_CODE
+  const partnerSecret = process.env.EGOV_SSO_PARTNER_SECRET
+
+  if (!partnerCode || !partnerSecret) {
+    throw new Error('EGOV_SSO_PARTNER_CODE and EGOV_SSO_PARTNER_SECRET must be set')
+  }
+
+  return { partnerCode, partnerSecret }
 }
 
-/** Exchange the code eGovPH handed back for the citizen's profile. */
+/** Exchange an upstream eGovPH code and resolve its authenticated profile. */
 export async function exchangeCode(code: string): Promise<EgovResult<EgovProfile>> {
   return callEgov(
     'SSO',
     async () => {
-      const raw = await egovFetch<Record<string, any>>(
+      const { partnerCode, partnerSecret } = partnerCredentials()
+      const tokenResponse = await egovFetch<SsoTokenResponse>('SSO', '/api/token', {
+        method: 'POST',
+        body: JSON.stringify({
+          exchange_code: code,
+          scope: 'SSO_AUTHENTICATION',
+          partner_code: partnerCode,
+          partner_secret: partnerSecret,
+        }),
+      })
+
+      if (typeof tokenResponse.access_token !== 'string' || !tokenResponse.access_token) {
+        throw new Error('eGovPH /api/token returned no access token')
+      }
+
+      const raw = await egovFetch<Record<string, unknown>>(
         'SSO',
         '/api/partner/sso_authentication',
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${await partnerToken()}` },
-          body: JSON.stringify({
-            code,
-            redirect_uri: process.env.EGOV_SSO_REDIRECT_URI,
-          }),
+          headers: authHeaders('SSO', tokenResponse.access_token),
         },
       )
 
@@ -79,24 +67,44 @@ export async function exchangeCode(code: string): Promise<EgovResult<EgovProfile
   )
 }
 
-function normalizeProfile(raw: Record<string, any>): EgovProfile {
-  const p = raw.data ?? raw.user ?? raw.profile ?? raw
+function normalizeProfile(raw: Record<string, unknown>): EgovProfile {
+  const profile = raw.data
+  if (!isRecord(profile)) {
+    throw new Error('eGovPH SSO response contained no profile data')
+  }
 
-  const sub = p.sub ?? p.id ?? p.userId ?? p.user_id ?? p.uuid
-  if (!sub) throw new Error('SSO response contained no subject identifier')
+  if (typeof profile.uniqid !== 'string' || !profile.uniqid) {
+    throw new Error('eGovPH SSO response contained no uniqid')
+  }
 
-  const fullName =
-    p.name ??
-    p.fullName ??
-    [p.firstName ?? p.first_name, p.lastName ?? p.last_name].filter(Boolean).join(' ')
+  const fullName = [
+    profile.first_name,
+    profile.middle_name,
+    profile.last_name,
+    profile.suffix,
+  ]
+    .filter(isNonEmptyString)
+    .join(' ')
 
   return {
-    sub: String(sub),
+    sub: profile.uniqid,
     fullName: fullName || 'eGovPH User',
-    email: p.email ?? null,
-    mobile: p.mobile ?? p.mobileNumber ?? p.contactNumber ?? null,
-    raw: p,
+    email: stringOrNull(profile.email),
+    mobile: stringOrNull(profile.mobile),
+    raw,
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
 }
 
 /**

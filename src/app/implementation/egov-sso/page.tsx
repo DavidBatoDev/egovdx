@@ -6,6 +6,7 @@ import {
   CardBody,
   CardHeader,
   PageHeader,
+  SourceBadge,
 } from '@/components/ui'
 import { getSession } from '@/lib/auth/session'
 import { egovMode } from '@/lib/egov/client'
@@ -77,6 +78,7 @@ export default async function EgovSsoHarness() {
         <CardHeader
           title="Current session"
           description="Decoded from the httpOnly cookie. This is exactly what every other feature receives from getSession()."
+          action={session?.ssoSource ? <SourceBadge source={session.ssoSource} /> : undefined}
         />
         <CardBody>
           {session ? (
