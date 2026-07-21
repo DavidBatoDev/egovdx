@@ -26,20 +26,20 @@ Updated after end-to-end unification.
   columns, control sequence table, and approval RPC are present.
 - The Elton integration suite covers payment, waiver, ownership denial,
   approval, idempotent re-approval, PDF/chain/SMS, rejection, queue, and analytics.
-- Headed browser QA covers citizen payment, one-click officer issuance, and
-  analytics.
+- Headed local browser QA covers citizen payment, one-click officer issuance,
+  and analytics. Production QA passes officer issuance, citizen tracking, and
+  signed-out public verification.
 - Earl's focused 21-check suite remains green after issuance refactoring.
 
 ## Controlled live status
 
 The configured eGOV PAY token is a test token, but `EGOV_PAY_MODE` remains
-`mock`. eMessage also remains `mock`, and no `EGOV_EMESSAGE_TEST_NUMBER` is
-configured. No external transaction or SMS was created during automated QA.
-Switch each integration independently only for the controlled live proof; never
-send a QA notification to a citizen's production number.
-
-These two controlled proofs are Elton's only remaining required tasks. All
-owned application routes and persistence work are complete.
+`mock`: the controlled create-transaction requests returned `422` with an
+invalid-digest error. Production eMessage is live and its controlled proof was
+accepted using the configured approved test number; QA never targets the
+request's citizen number. All Elton-owned application routes and persistence
+work are complete. The Pay certification is an external contract follow-up,
+not missing application implementation.
 
 ## Integration boundary
 

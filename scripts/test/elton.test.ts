@@ -9,6 +9,7 @@ const PAY_ID = 'eeeeeeee-0000-0000-0000-000000000001'
 const WAIVE_ID = 'eeeeeeee-0000-0000-0000-000000000002'
 const REJECT_ID = 'eeeeeeee-0000-0000-0000-000000000003'
 let paidFee = 0
+let officerLguId = ''
 
 function db() { return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } }) }
 async function cookie(role: 'citizen'|'officer', sub: string, lguId: string | null) {
@@ -23,8 +24,11 @@ async function api(path: string, method: 'GET'|'POST', auth: string, body?: unkn
 async function seed() {
   const client = db()
   await cleanup()
-  const { data: paidService, error: paidError } = await client.from('lgu_services').select('id,fee_amount').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
-  const { data: freeService, error: freeError } = await client.from('lgu_services').select('id').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').eq('fee_amount', 0).limit(1).maybeSingle()
+  const { data: officer, error: officerError } = await client.from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+  if (officerError || !officer) throw new Error(officerError?.message ?? 'Demo officer is not assigned to an LGU')
+  officerLguId = officer.lgu_id
+  const { data: paidService, error: paidError } = await client.from('lgu_services').select('id,fee_amount').eq('lgu_id', officerLguId).eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  const { data: freeService, error: freeError } = await client.from('lgu_services').select('id').eq('status', 'published').eq('fee_amount', 0).limit(1).maybeSingle()
   if (paidError || !paidService) throw new Error(paidError?.message ?? 'No paid published service available')
   if (freeError || !freeService) throw new Error(freeError?.message ?? 'No free published service available')
   paidFee = Number(paidService.fee_amount)
@@ -50,7 +54,7 @@ async function main() {
   assert.equal((await fetch(BASE)).status < 500, true)
   await seed()
   const citizen = await cookie('citizen', 'demo-citizen-sub', null)
-  const officer = await cookie('officer', 'demo-officer-sub', '22222222-2222-2222-2222-222222222222')
+  const officer = await cookie('officer', 'demo-officer-sub', officerLguId)
 
   let result = await api(`/api/requests/${PAY_ID}/payment`, 'POST', citizen, {})
   assert.equal(result.response.status, 200, JSON.stringify(result.data))

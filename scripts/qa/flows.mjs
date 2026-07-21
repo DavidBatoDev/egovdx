@@ -24,7 +24,9 @@ function qaDb() {
 async function seedEltonRequest(id, feeStatus = 'unpaid') {
   const db = qaDb()
   await cleanupEltonRequest(id)
-  const { data: service, error: serviceError } = await db.from('lgu_services').select('id,fee_amount').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  const { data: officer, error: officerError } = await db.from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+  if (officerError || !officer) throw new Error(officerError?.message ?? 'Demo officer is not assigned to an LGU')
+  const { data: service, error: serviceError } = await db.from('lgu_services').select('id,fee_amount').eq('lgu_id', officer.lgu_id).eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
   if (serviceError || !service) throw new Error(serviceError?.message ?? 'No paid published service available for QA')
   const { error } = await db.from('requests').insert({ id, lgu_service_id: service.id, citizen_sub: 'demo-citizen-sub', citizen_name: `QA Citizen ${id.slice(-2)}`, citizen_mobile: '+639171234567', everify_payload: { full_name: 'QA Citizen', reference: `EV-${id.slice(-4)}` }, everify_reference: `EV-${id.slice(-4)}`, liveness_passed: true, liveness_score: 98.5, form_data: { purpose: 'Employment' }, status: 'submitted', fee_due: Number(service.fee_amount), fee_status: feeStatus })
   if (error) throw new Error(error.message)
@@ -75,11 +77,17 @@ async function setQaSession(page, baseUrl, role, lguId) {
   if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET missing')
   const officer = role === 'officer'
   const reviewer = role === 'reviewer'
+  let sessionLguId = lguId ?? null
+  if (officer && !sessionLguId) {
+    const { data: assignedOfficer, error } = await qaDb().from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+    if (error || !assignedOfficer) throw new Error(error?.message ?? 'Demo officer is not assigned to an LGU')
+    sessionLguId = assignedOfficer.lgu_id
+  }
   const token = await new SignJWT({
     sub: officer ? 'demo-officer-sub' : reviewer ? 'demo-reviewer-sub' : 'demo-citizen-sub',
     name: officer ? 'Maria Santos' : reviewer ? 'Jose Reyes' : 'Demo Citizen',
     role,
-    lguId: officer ? (lguId ?? '22222222-2222-2222-2222-222222222222') : null,
+    lguId: officer ? sessionLguId : null,
     mobile: '+639171234567',
     firstName: officer ? 'Maria' : 'Juana',
     middleName: officer ? '' : 'Santos',
@@ -347,9 +355,14 @@ export const flows = [
       await seedEltonRequest(id, 'paid')
       try {
         await setQaSession(page, baseUrl, 'officer')
-        await visit(page, `${baseUrl}/console/requests`)
-        const row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
-        await row.waitFor()
+        let row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await visit(page, `${baseUrl}/console/requests`)
+          row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
+          if (await row.isVisible().catch(() => false)) break
+          await page.waitForTimeout(2_000)
+        }
+        await row.waitFor({ timeout: 15_000 })
         await page.waitForTimeout(250)
         await row.getByRole('button', { name: /approve and issue/i }).click()
         await row.getByRole('link', { name: /open public verification/i }).waitFor({ timeout: 90_000 })
@@ -560,13 +573,21 @@ export const flows = [
       )
       const fileInput = page.locator('input[type="file"]').first()
       await page.waitForTimeout(250)
-      await fileInput.setInputFiles({
+      const upload = {
         name: 'test-doc.pdf',
         mimeType: 'application/pdf',
         buffer: pdfBytes,
-      })
+      }
+      await fileInput.setInputFiles(upload)
 
-      await page.getByText(/sha-256 of uploaded file/i).waitFor({ timeout: 30_000 })
+      const hashResult = page.getByText(/sha-256 of uploaded file/i)
+      if (!(await hashResult.waitFor({ timeout: 5_000 }).then(() => true).catch(() => false))) {
+        await fileInput.setInputFiles([])
+        await page.waitForTimeout(250)
+        await fileInput.setInputFiles(upload)
+      }
+
+      await hashResult.waitFor({ timeout: 30_000 })
       await shot('verify-upload-hash')
       return 'browser hash computed'
     },

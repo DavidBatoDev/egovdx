@@ -30,10 +30,13 @@ verification without using an implementation harness.
 
 ## Remaining work
 
-No core application feature or required harness remains unbuilt. Before final
-recording, complete the controlled live checks for David's AI adapter, Joshua's
-identity chain, and Elton's Pay/eMessage adapters, then rerun production browser
-QA. Jasmin and Earl have no remaining owned implementation work.
+No core application feature or required harness remains unbuilt. Production
+browser QA passes the unified officer issuance → citizen tracking → public
+verification journey. David's AI route is live through the OpenAI fallback,
+eMessage and eGOV chain are live, and Jasmin and Earl have no remaining owned
+implementation work. Before recording, certify Joshua's identity chain with a
+fresh single-use exchange code. eGOV PAY stays mock until DICT resolves the
+test endpoint's `422` digest rejection.
 
 ## Important routes
 

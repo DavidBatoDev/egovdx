@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getRequest, getRequestByHash } from '@/lib/data'
 import { verifyAnchor } from '@/lib/egov/chain'
-import { dateOnly, shortHash } from '@/lib/format'
+import { dateOnly, dateTime, shortHash } from '@/lib/format'
 import {
   Badge,
   Card,
@@ -160,7 +160,7 @@ export default async function VerifyPage({ params }: Props) {
             <Row label="Block Number" value={String(chainResult.data.blockNumber)} mono />
           )}
           {(chainResult?.data.blockTimestamp ?? request.chain_anchored_at) && (
-            <Row label="Anchored At" value={new Date(chainResult?.data.blockTimestamp ?? request.chain_anchored_at!).toLocaleString('en-PH')} />
+            <Row label="Anchored At" value={dateTime(chainResult?.data.blockTimestamp ?? request.chain_anchored_at!)} />
           )}
         </CardBody>
       </Card>

@@ -137,6 +137,15 @@ export function ButtonLink({
   return <Link {...props} className={cn(BUTTON_BASE, BUTTON_STYLES[variant], className)} />
 }
 
+/** Native anchor for downloads and non-Next endpoints that must not be prefetched. */
+export function ButtonAnchor({
+  variant = 'primary',
+  className,
+  ...props
+}: ComponentProps<'a'> & { variant?: ButtonVariant }) {
+  return <a {...props} className={cn(BUTTON_BASE, BUTTON_STYLES[variant], className)} />
+}
+
 // ------------------------------------------------------------------ badges
 
 type Tone = 'neutral' | 'brand' | 'success' | 'warn' | 'danger' | 'accent'

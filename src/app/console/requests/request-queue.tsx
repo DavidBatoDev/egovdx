@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Badge, Button, ButtonLink, SourceBadge, StatusBadge } from '@/components/ui'
+import { Badge, Button, ButtonAnchor, ButtonLink, SourceBadge, StatusBadge } from '@/components/ui'
 import type { RequestWithService } from '@/lib/data'
 
 export function RequestQueue({ initialRequests }: { initialRequests: RequestWithService[] }) {
@@ -92,7 +92,7 @@ export function RequestQueue({ initialRequests }: { initialRequests: RequestWith
           {['failed', 'unknown'].includes(request.sms_status) ? <Button variant="secondary" disabled={busy === request.id} onClick={() => retrySms(request.id)}>Retry SMS with note</Button> : null}
           {!approvable && request.status === 'submitted' ? <Badge tone="warn">Complete payment and identity checks first</Badge> : null}
         </div>
-        {request.status === 'issued' ? <div className="flex flex-wrap gap-2"><ButtonLink href={`/api/issue/download?id=${request.id}`}>Download issued PDF</ButtonLink><ButtonLink href={`/verify/${request.id}`} variant="secondary">Open public verification</ButtonLink></div> : null}
+          {request.status === 'issued' ? <div className="flex flex-wrap gap-2"><ButtonAnchor href={`/api/issue/download?id=${request.id}`}>Download issued PDF</ButtonAnchor><ButtonLink href={`/verify/${request.id}`} variant="secondary">Open public verification</ButtonLink></div> : null}
       </article>
     })}
   </div>
