@@ -1,0 +1,7 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# Limit Codex to this development project and read-only database access.
+# Codex reads the token from the process environment; no secret is committed.
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=fvvqesqjerhtebdifhun&read_only=true"
+bearer_token_env_var = "SUPABASE_ACCESS_TOKEN"
