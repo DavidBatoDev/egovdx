@@ -12,7 +12,7 @@ import { SignJWT, jwtVerify } from 'jose'
  */
 
 export const SESSION_COOKIE = 'egovdx_session'
-const MAX_AGE_SECONDS = 60 * 60 * 8 // one working day
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8 // one working day
 
 export type SessionRole = 'citizen' | 'officer' | 'reviewer'
 
@@ -37,19 +37,23 @@ export async function createSessionCookie(session: Session): Promise<string> {
   return new SignJWT({ ...session })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(`${MAX_AGE_SECONDS}s`)
+    .setExpirationTime(`${SESSION_MAX_AGE_SECONDS}s`)
     .sign(secret())
+}
+
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  }
 }
 
 export async function setSession(session: Session): Promise<void> {
   const jar = await cookies()
-  jar.set(SESSION_COOKIE, await createSessionCookie(session), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: MAX_AGE_SECONDS,
-  })
+  jar.set(SESSION_COOKIE, await createSessionCookie(session), sessionCookieOptions())
 }
 
 export async function getSession(): Promise<Session | null> {

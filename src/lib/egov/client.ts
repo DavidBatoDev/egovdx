@@ -151,9 +151,9 @@ const DEFAULT_TIMEOUT_MS = 15_000
 export async function egovFetch<T>(
   service: EgovService,
   path: string,
-  init: RequestInit & { timeoutMs?: number; baseUrl?: string } = {},
+  init: RequestInit & { timeoutMs?: number; baseUrl?: string; responseType?: 'json' | 'text' } = {},
 ): Promise<T> {
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, baseUrl, ...rest } = init
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, baseUrl, responseType = 'json', ...rest } = init
   const url = `${baseUrl ?? egovBaseUrl(service)}${path}`
 
   const controller = new AbortController()
@@ -176,6 +176,7 @@ export async function egovFetch<T>(
     const text = await res.text()
     if (!res.ok) throw new EgovHttpError(service, res.status, text, url)
 
+    if (responseType === 'text') return text as T
     return (text ? JSON.parse(text) : {}) as T
   } finally {
     clearTimeout(timer)

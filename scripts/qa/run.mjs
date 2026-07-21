@@ -30,6 +30,7 @@ function parseArgs(argv) {
     if (a === '--headless') args.headless = true
     else if (a === '--slowmo') args.slowMo = Number(argv[++i])
     else if (a === '--base') args.baseUrl = argv[++i]
+    else if (a === '--access') args.accessUrl = argv[++i]
     else if (!a.startsWith('-')) args.only.push(a)
   }
 
@@ -99,6 +100,12 @@ async function main() {
       ignoreHTTPSErrors: true,
     })
     const page = await context.newPage()
+
+    // Protected Vercel previews can provide a temporary share URL. Visit it
+    // once per fresh context so Vercel sets its bypass cookie before the flow.
+    if (args.accessUrl) {
+      await page.goto(args.accessUrl, { waitUntil: 'domcontentloaded' })
+    }
 
     const consoleErrors = []
     const failedRequests = []

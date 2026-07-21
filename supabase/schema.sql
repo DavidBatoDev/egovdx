@@ -9,6 +9,7 @@
 drop table if exists request_events   cascade;
 drop table if exists requests         cascade;
 drop table if exists validation_flags cascade;
+drop table if exists studio_generation_cache cascade;
 drop table if exists lgu_services     cascade;
 drop table if exists service_templates cascade;
 drop table if exists officers         cascade;
@@ -71,6 +72,13 @@ create table lgu_services (
   eligibility       jsonb not null default '{}'::jsonb,
   form_fields       jsonb not null default '[]'::jsonb,  -- drives the citizen form renderer
   doc_template_path text,                                -- Supabase Storage path
+  source_prompt     text,
+  generated_by      text check (generated_by is null or generated_by in ('ai','upload','manual')),
+  generator_model   text,
+  approval_office   text,
+  generation_confidence numeric(4,3),
+  reviewed_by       text,
+  reviewed_at       timestamptz,
   submitted_at      timestamptz,
   published_at      timestamptz,
   created_at        timestamptz not null default now(),
@@ -90,9 +98,30 @@ create table validation_flags (
   message        text not null,
   field_path     text,
   resolved       boolean not null default false,
+  resolution_note text,
+  resolved_by     text,
+  resolved_at     timestamptz,
+  constraint validation_flag_resolution_audit check (
+    not resolved or (length(trim(resolution_note)) > 0 and resolved_by is not null and resolved_at is not null)
+  ),
   created_at     timestamptz not null default now()
 );
 create index on validation_flags(lgu_service_id);
+
+create table studio_generation_cache (
+  id          uuid primary key default gen_random_uuid(),
+  lgu_id      uuid not null references lgus(id) on delete cascade,
+  input_kind  text not null check (input_kind in ('prompt','extraction')),
+  input_hash  text not null,
+  result      jsonb not null,
+  engine      text not null check (engine in ('egov-ai','openai','mock')),
+  model       text not null,
+  source      text not null check (source in ('live','mock','fallback')),
+  primary_error text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  unique (lgu_id, input_kind, input_hash)
+);
 
 -- ------------------------------------------------------------ requests
 -- A citizen's application. everify_payload holds the verified identity we pulled
