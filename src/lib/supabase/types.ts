@@ -136,39 +136,78 @@ export type RequestEvent = {
   created_at: string
 }
 
-/** Rows are Insert-able with generated columns omitted. */
-type Insertable<T> = Omit<T, 'id' | 'created_at'> & { id?: string; created_at?: string }
+/**
+ * Rows are Insert-able with generated columns omitted, and every column that
+ * has a DB-side default becomes optional.
+ */
+type Insertable<T, Optional extends keyof T = never> = Omit<T, 'id' | 'created_at' | Optional> &
+  Partial<Pick<T, Optional>> & { id?: string; created_at?: string }
+
+/**
+ * supabase-js v2 requires a `Relationships` key on every table, otherwise the
+ * whole table type collapses to `never` and every column access errors. We
+ * declare no relationships and let the explicit joins in lib/data.ts carry
+ * their own casts — cheaper than hand-writing the relationship graph.
+ */
+type Table<Row, Insert> = {
+  Row: Row
+  Insert: Insert
+  Update: Partial<Row>
+  Relationships: []
+}
 
 export type Database = {
   public: {
     Tables: {
-      lgus: { Row: Lgu; Insert: Insertable<Lgu>; Update: Partial<Lgu> }
-      officers: { Row: Officer; Insert: Insertable<Officer>; Update: Partial<Officer> }
-      service_templates: {
-        Row: ServiceTemplate
-        Insert: Insertable<ServiceTemplate>
-        Update: Partial<ServiceTemplate>
-      }
-      lgu_services: {
-        Row: LguService
-        Insert: Insertable<LguService>
-        Update: Partial<LguService>
-      }
-      validation_flags: {
-        Row: ValidationFlag
-        Insert: Insertable<ValidationFlag>
-        Update: Partial<ValidationFlag>
-      }
-      requests: {
-        Row: ServiceRequest
-        Insert: Insertable<ServiceRequest>
-        Update: Partial<ServiceRequest>
-      }
-      request_events: {
-        Row: RequestEvent
-        Insert: Insertable<RequestEvent>
-        Update: Partial<RequestEvent>
-      }
+      lgus: Table<Lgu, Insertable<Lgu, 'parent_id' | 'region' | 'psgc_code' | 'letterhead_url' | 'seal_url'>>
+      officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'role'>>
+      service_templates: Table<
+        ServiceTemplate,
+        Insertable<ServiceTemplate, 'description' | 'base_fields' | 'allowed_rules' | 'max_fee'>
+      >
+      lgu_services: Table<
+        LguService,
+        Insertable<
+          LguService,
+          | 'status'
+          | 'fee_amount'
+          | 'waivers'
+          | 'required_docs'
+          | 'eligibility'
+          | 'form_fields'
+          | 'doc_template_path'
+          | 'submitted_at'
+          | 'published_at'
+        >
+      >
+      validation_flags: Table<
+        ValidationFlag,
+        Insertable<ValidationFlag, 'severity' | 'field_path' | 'resolved'>
+      >
+      requests: Table<
+        ServiceRequest,
+        Insertable<
+          ServiceRequest,
+          | 'citizen_sub'
+          | 'citizen_name'
+          | 'citizen_mobile'
+          | 'everify_payload'
+          | 'liveness_session'
+          | 'liveness_passed'
+          | 'form_data'
+          | 'status'
+          | 'fee_due'
+          | 'fee_status'
+          | 'waiver_applied'
+          | 'payment_ref'
+          | 'control_number'
+          | 'pdf_path'
+          | 'doc_hash'
+          | 'chain_tx'
+          | 'issued_at'
+        >
+      >
+      request_events: Table<RequestEvent, Insertable<RequestEvent, 'payload'>>
     }
     Views: Record<string, never>
     Functions: Record<string, never>

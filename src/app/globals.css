@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
+/*
+ * Palette leans on Philippine government blue with a warm gold accent. Light
+ * mode only, deliberately — this gets screen-recorded, and a theme toggle is
+ * one more thing that can look wrong on camera.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --foreground: #10151c;
+  --muted: #5b6673;
+  --border: #dfe3e8;
+
+  --brand: #0b3d91;
+  --brand-hover: #092f70;
+  --brand-soft: #e8eefb;
+
+  --accent: #b8860b;
+  --accent-soft: #fdf6e3;
+
+  --success: #0f7b3f;
+  --success-soft: #e6f4ec;
+  --warn: #a15c00;
+  --warn-soft: #fdf1e0;
+  --danger: #b3261e;
+  --danger-soft: #fdeceb;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Focus ring that stays visible against both the page and brand-blue buttons. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
