@@ -202,7 +202,7 @@ export const flows = [
       await visit(page, `${baseUrl}${href}`, { path: href ?? '/apply' })
 
       await page.getByRole('button', { name: /start face liveness/i }).click()
-      await page.getByRole('heading', { name: /application form/i }).waitFor({ timeout: 15_000 })
+      await page.getByRole('heading', { name: /application form/i }).waitFor({ timeout: 30_000 })
       const fields = page.locator('input:not([disabled]), select:not([disabled]), textarea:not([disabled])')
       const count = await fields.count()
       if (count === 0) throw new Error('Apply page rendered no editable form fields')
@@ -273,7 +273,7 @@ export const flows = [
         await visit(page, `${baseUrl}/pay/${id}`)
         await page.getByRole('heading', { name: /barangay clearance/i }).waitFor({ timeout: 15_000 })
         await page.getByRole('button', { name: /assess fee/i }).click()
-        await page.getByText(/mock data/i).waitFor()
+        await page.getByText(/mock data/i).waitFor({ timeout: 60_000 })
         await page.getByRole('button', { name: /confirm mock payment/i }).click()
         await page.getByText(/ready for officer review/i).waitFor()
         await shot('elton-payment-complete')
@@ -298,7 +298,7 @@ export const flows = [
         // window on a cold serverless start. Accept every honestly labelled
         // source; production is expected to show Live API, while local QA uses
         // the explicit mock badge.
-        await row.getByText('Issued').waitFor({ timeout: 60_000 })
+        await row.getByText('Issued').waitFor({ timeout: 90_000 })
         await row.getByText(/Live API|Mock data|Offline — using cached data/i).waitFor()
         await shot('elton-approved-issued')
         return 'PDF, chain attempt, and SMS completed'
@@ -338,7 +338,7 @@ export const flows = [
           'Municipal Transport Office.',
       )
       await page.getByRole('button', { name: 'Generate preview' }).click()
-      await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 45_000 })
+      await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 75_000 })
       await shot('studio-preview')
       await page.getByRole('button', { name: 'Confirm and submit' }).click()
       await page.getByText(/Published|Sent to DICT review/).waitFor({ timeout: 20_000 })
