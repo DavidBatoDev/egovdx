@@ -32,6 +32,22 @@ npx next build        # ONLY as part of committing
 The reason is time, not principle: this is a deadline build, and a full
 production build repeated between every edit is minutes of nothing.
 
+## This is a working app, not a demo
+
+Every feature must accept input the demo script never mentions — an LGU nobody
+seeded, a prompt nobody rehearsed, a citizen who isn't in a fixture. Mock
+fallbacks are an outage safety net, not the primary path. If it only works on
+the rehearsed input, it isn't done.
+
+Task distribution and per-developer assignments: `docs/05_task_distribution.md`.
+Demo script: `docs/06_demo_script.md`.
+
+**`docs/API_Reference.md` is the authority on every eGovPH contract.** It
+supersedes the catalog in `docs/api_catalog_documentation_v2.md` and any shape
+inferred in code. Check it before touching an adapter — several services use
+custom auth headers rather than bearer tokens, and `authHeaders()` in
+`src/lib/egov/client.ts` already encodes which is which.
+
 ## Working on a feature
 
 Five people build in parallel. Features are developed in isolation at

@@ -4,6 +4,7 @@ import {
   FEATURES,
   STATUS_LABEL,
   dependents,
+  featuresByOwner,
   getFeature,
   isBlocked,
   type Feature,
@@ -44,6 +45,34 @@ export default function ImplementationIndex() {
             {STATUS_LABEL[status]}: {counts[status] ?? 0}
           </Badge>
         ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {[...featuresByOwner().entries()].map(([owner, owned]) => {
+          const done = owned.filter((f) => f.status === 'unified').length
+          return (
+            <Card key={owner}>
+              <CardBody className="space-y-1">
+                <p className="font-medium">{owner}</p>
+                <p className="text-xs text-muted">
+                  {done}/{owned.length} unified
+                </p>
+                <ul className="pt-1 text-xs text-muted">
+                  {owned.map((f) => (
+                    <li key={f.slug} className="truncate">
+                      <Link
+                        href={`/implementation/${f.slug}`}
+                        className="hover:text-brand hover:underline"
+                      >
+                        {f.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CardBody>
+            </Card>
+          )
+        })}
       </div>
 
       <Card>

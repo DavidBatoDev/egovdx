@@ -47,6 +47,30 @@ export function egovBaseUrl(service: EgovService): string {
 }
 
 /**
+ * Every service authenticates differently, and three of them use a custom
+ * header rather than a bearer token. Getting the header name — or its casing —
+ * wrong produces a 401 that looks exactly like a bad credential, so the mapping
+ * lives here once instead of being retyped in each adapter.
+ *
+ * Source: docs/API_Reference.md, "Base URL & auth legend".
+ */
+export function authHeaders(service: EgovService, token: string): Record<string, string> {
+  switch (service) {
+    case 'EMESSAGE':
+      return { 'X-EMESSAGE-Auth': token }
+    case 'PAY':
+      return { 'X-eGovPay-Token': token }
+    case 'LIVENESS':
+      // Lowercase. DBM Compass uses X-API-Key uppercase — they are not the same.
+      return { 'x-api-key': token }
+    case 'CHAIN':
+      return {} // JSON-RPC, no auth documented
+    default:
+      return { Authorization: `Bearer ${token}` }
+  }
+}
+
+/**
  * Run a live call, falling back to a fixture on any failure.
  *
  * Every adapter in this directory goes through here. Callers get an EgovResult

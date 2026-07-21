@@ -53,7 +53,21 @@ export type Lgu = {
   psgc_code: string | null
   letterhead_url: string | null
   seal_url: string | null
+  official_email: string | null
+  registered_by: string | null
+  registered_at: string | null
+  logo_url: string | null
   created_at: string
+}
+
+/** PSA geographic reference — backs the "Register LGU" lookup. */
+export type PsgcEntry = {
+  code: string
+  name: string
+  level: 'region' | 'province' | 'municipality' | 'city' | 'barangay'
+  parent_code: string | null
+  region_code: string | null
+  province_code: string | null
 }
 
 export type Officer = {
@@ -88,6 +102,12 @@ export type LguService = {
   eligibility: Eligibility
   form_fields: FormField[]
   doc_template_path: string | null
+  /** The natural-language prompt an officer typed, when generated_by === 'ai'. */
+  source_prompt: string | null
+  generated_by: 'ai' | 'upload' | 'manual' | null
+  generator_model: string | null
+  /** Which office signs off, e.g. 'Municipal Health Office'. */
+  approval_office: string | null
   submitted_at: string | null
   published_at: string | null
   created_at: string
@@ -119,6 +139,13 @@ export type ServiceRequest = {
   fee_status: FeeStatus
   waiver_applied: string | null
   payment_ref: string | null
+  payment_uuid: string | null
+  payment_url: string | null
+  payment_txnid: string | null
+  uploaded_docs: string[]
+  /** Liveness confidence out of 100. We accept only >= 95.0. */
+  liveness_score: number | null
+  everify_reference: string | null
   control_number: string | null
   pdf_path: string | null
   doc_hash: string | null
@@ -159,7 +186,27 @@ type Table<Row, Insert> = {
 export type Database = {
   public: {
     Tables: {
-      lgus: Table<Lgu, Insertable<Lgu, 'parent_id' | 'region' | 'psgc_code' | 'letterhead_url' | 'seal_url'>>
+      lgus: Table<
+        Lgu,
+        Insertable<
+          Lgu,
+          | 'parent_id'
+          | 'region'
+          | 'psgc_code'
+          | 'letterhead_url'
+          | 'seal_url'
+          | 'official_email'
+          | 'registered_by'
+          | 'registered_at'
+          | 'logo_url'
+        >
+      >
+      psgc_reference: {
+        Row: PsgcEntry
+        Insert: PsgcEntry
+        Update: Partial<PsgcEntry>
+        Relationships: []
+      }
       officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'role'>>
       service_templates: Table<
         ServiceTemplate,
@@ -176,6 +223,10 @@ export type Database = {
           | 'eligibility'
           | 'form_fields'
           | 'doc_template_path'
+          | 'source_prompt'
+          | 'generated_by'
+          | 'generator_model'
+          | 'approval_office'
           | 'submitted_at'
           | 'published_at'
         >
@@ -200,6 +251,12 @@ export type Database = {
           | 'fee_status'
           | 'waiver_applied'
           | 'payment_ref'
+          | 'payment_uuid'
+          | 'payment_url'
+          | 'payment_txnid'
+          | 'uploaded_docs'
+          | 'liveness_score'
+          | 'everify_reference'
           | 'control_number'
           | 'pdf_path'
           | 'doc_hash'
