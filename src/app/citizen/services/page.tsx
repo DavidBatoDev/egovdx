@@ -65,7 +65,7 @@ export default async function ServicesPage() {
               {lguServices.map((service) => (
                 <li key={service.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
                   <div className="min-w-0">
-                    <p className="font-medium">{service.template.name}</p>
+                    <p className="font-medium">{service.display_name || service.template.name}</p>
                     <p className="mt-0.5 text-sm text-muted">{service.template.description}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge tone={service.fee_amount > 0 ? 'accent' : 'success'}>

@@ -97,13 +97,14 @@ insert into service_templates (id, code, name, description, max_fee, base_fields
 
 -- -------------------------------------------------------- lgu_services
 insert into lgu_services
-  (id, lgu_id, template_id, status, fee_amount, waivers, required_docs,
+  (id, lgu_id, template_id, display_name, status, fee_amount, waivers, required_docs,
    eligibility, form_fields, submitted_at, published_at) values
 (
   -- PUBLISHED: the citizen demo path. Live on first paint.
   'cccccccc-0000-0000-0000-000000000001',
   '22222222-2222-2222-2222-222222222222',
   'bbbbbbbb-0000-0000-0000-000000000001',
+  'Barangay Clearance',
   'published', 50.00,
   '[{"category":"student","label":"Student (with valid ID)","waives":"full"},
     {"category":"senior_citizen","label":"Senior Citizen","waives":"full"}]'::jsonb,
@@ -125,6 +126,7 @@ insert into lgu_services
   'cccccccc-0000-0000-0000-000000000002',
   '22222222-2222-2222-2222-222222222222',
   'bbbbbbbb-0000-0000-0000-000000000002',
+  'Certificate of Indigency',
   'published', 0.00,
   '[{"category":"indigent","label":"Indigent Household","waives":"full"}]'::jsonb,
   '["Barangay Certificate of Residency (if available)"]'::jsonb,
@@ -146,6 +148,7 @@ insert into lgu_services
   'cccccccc-0000-0000-0000-000000000003',
   '33333333-3333-3333-3333-333333333333',
   'bbbbbbbb-0000-0000-0000-000000000003',
+  'Business Permit Endorsement',
   'flagged', 750.00,
   '[{"category":"OFW","label":"Overseas Filipino Worker","waives":"full"}]'::jsonb,
   '["DTI Business Name Registration","Lease Contract or Land Title"]'::jsonb,

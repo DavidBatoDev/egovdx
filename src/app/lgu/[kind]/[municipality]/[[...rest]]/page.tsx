@@ -1,24 +1,28 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerDashboard from '@/components/officer/dashboard'
-import { OfficerAnalytics, OfficerRequests, OfficerStudio } from '@/components/officer/section-pages'
+import { OfficerAiStudio, OfficerAnalytics, OfficerManualStudio, OfficerRequests, OfficerStudioHub, OfficerWebsite } from '@/components/officer/section-pages'
 import { getSession } from '@/lib/auth/session'
 import { getOfficerLguScope } from '@/lib/lgu-scope'
 
 export const dynamic = 'force-dynamic'
 
-type OfficerSection = 'studio' | 'requests' | 'analytics'
+type OfficerSection = 'studio' | 'studio-ai' | 'studio-manual' | 'requests' | 'analytics' | 'website'
 
-function parseRest(rest: string[] | undefined): { barangaySlug: string | null; section: OfficerSection | null } | null {
-  if (!rest?.length) return { barangaySlug: null, section: null }
-  if (rest.length === 1 && ['studio', 'requests', 'analytics'].includes(rest[0])) {
-    return { barangaySlug: null, section: rest[0] as OfficerSection }
+function parseRest(rest: string[] | undefined): { barangaySlug: string | null; section: OfficerSection | null; serviceId: string | null } | null {
+  let path = rest ?? []
+  let barangaySlug: string | null = null
+  if (path[0] === 'brgy') {
+    if (!path[1]) return null
+    barangaySlug = path[1]
+    path = path.slice(2)
   }
-  if (rest.length === 2 && rest[0] === 'brgy') {
-    return { barangaySlug: rest[1], section: null }
-  }
-  if (rest.length === 3 && rest[0] === 'brgy' && ['studio', 'requests', 'analytics'].includes(rest[2])) {
-    return { barangaySlug: rest[1], section: rest[2] as OfficerSection }
-  }
+  if (!path.length) return { barangaySlug, section: null, serviceId: null }
+  if (path.length === 1 && ['requests', 'analytics', 'website'].includes(path[0])) return { barangaySlug, section: path[0] as OfficerSection, serviceId: null }
+  if (path[0] !== 'studio') return null
+  if (path.length === 1) return { barangaySlug, section: 'studio', serviceId: null }
+  if (path.length === 2 && path[1] === 'ai') return { barangaySlug, section: 'studio-ai', serviceId: null }
+  if (path.length === 2 && path[1] === 'manual') return { barangaySlug, section: 'studio-manual', serviceId: null }
+  if (path.length === 3 && path[1] === 'manual') return { barangaySlug, section: 'studio-manual', serviceId: path[2] }
   return null
 }
 
@@ -41,11 +45,15 @@ export default async function ScopedOfficerPage({
     && route.municipality === scope.municipalitySlug
     && parsed.barangaySlug === scope.barangaySlug
   if (!routeMatchesScope) {
-    redirect(`${scope.canonicalBase}${parsed.section ? `/${parsed.section}` : ''}`)
+    const suffix = parsed.section === 'studio-ai' ? '/studio/ai' : parsed.section === 'studio-manual' ? `/studio/manual${parsed.serviceId ? `/${parsed.serviceId}` : ''}` : parsed.section ? `/${parsed.section}` : ''
+    redirect(`${scope.canonicalBase}${suffix}`)
   }
 
-  if (parsed.section === 'studio') return <OfficerStudio dashboardHref={scope.canonicalBase} />
+  if (parsed.section === 'studio') return <OfficerStudioHub dashboardHref={scope.canonicalBase} />
+  if (parsed.section === 'studio-ai') return <OfficerAiStudio dashboardHref={scope.canonicalBase} lguId={scope.lguId} />
+  if (parsed.section === 'studio-manual') return <OfficerManualStudio dashboardHref={scope.canonicalBase} lguId={scope.lguId} serviceId={parsed.serviceId} />
   if (parsed.section === 'requests') return <OfficerRequests session={session} />
   if (parsed.section === 'analytics') return <OfficerAnalytics session={session} />
+  if (parsed.section === 'website') return <OfficerWebsite lguId={scope.lguId} />
   return <OfficerDashboard session={session} scope={scope} />
 }

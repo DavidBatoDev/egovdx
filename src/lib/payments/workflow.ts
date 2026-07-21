@@ -89,7 +89,7 @@ export async function startRequestPayment(
 
   let payment
   try {
-    payment = await generatePayment(feeDue, request.service.template.name, txnid)
+    payment = await generatePayment(feeDue, request.service.display_name || request.service.template.name, txnid)
   } catch (error) {
     await db.from('requests').update({ payment_txnid: null }).eq('id', requestId).is('payment_uuid', null)
     throw error

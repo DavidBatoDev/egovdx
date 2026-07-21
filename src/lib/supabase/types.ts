@@ -1,3 +1,5 @@
+import type { LguSiteConfig } from '@/lib/lgu-site/schema'
+
 /**
  * Hand-written to match supabase/schema.sql.
  *
@@ -8,7 +10,7 @@
 
 export type LguType = 'city' | 'municipality' | 'barangay'
 export type OfficerRole = 'officer' | 'reviewer'
-export type ServiceStatus = 'draft' | 'flagged' | 'published' | 'rejected'
+export type ServiceStatus = 'draft' | 'flagged' | 'published' | 'rejected' | 'archived'
 export type FlagSeverity = 'info' | 'warn' | 'block'
 export type RequestStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'issued'
 export type FeeStatus = 'unpaid' | 'waived' | 'paid'
@@ -93,6 +95,30 @@ export type Officer = {
   created_at: string
 }
 
+export type LguSiteConfigRow = {
+  lgu_id: string
+  draft_config: LguSiteConfig
+  published_config: LguSiteConfig | null
+  draft_revision: number
+  published_revision: number | null
+  updated_by: string | null
+  updated_at: string
+  published_by: string | null
+  published_at: string | null
+}
+
+export type LguSiteMedia = {
+  id: string
+  lgu_id: string
+  storage_path: string
+  kind: 'logo' | 'banner'
+  mime_type: 'image/jpeg' | 'image/png' | 'image/webp'
+  size_bytes: number
+  original_name: string
+  created_by: string
+  created_at: string
+}
+
 export type ServiceTemplate = {
   id: string
   code: string
@@ -108,6 +134,9 @@ export type LguService = {
   id: string
   lgu_id: string
   template_id: string
+  display_name: string
+  version: number
+  supersedes_service_id: string | null
   status: ServiceStatus
   fee_amount: number
   waivers: Waiver[]
@@ -259,6 +288,11 @@ export type Database = {
         Update: Partial<PsgcEntry>
         Relationships: []
       }
+      lgu_site_configs: Table<
+        LguSiteConfigRow,
+        Omit<LguSiteConfigRow, 'updated_at' | 'draft_revision'> & { updated_at?: string; draft_revision?: number }
+      >
+      lgu_site_media: Table<LguSiteMedia, Insertable<LguSiteMedia>>
       officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'office' | 'role'>>
       service_templates: Table<
         ServiceTemplate,
@@ -269,6 +303,9 @@ export type Database = {
         Insertable<
           LguService,
           | 'status'
+          | 'display_name'
+          | 'version'
+          | 'supersedes_service_id'
           | 'fee_amount'
           | 'waivers'
           | 'required_docs'
@@ -353,7 +390,7 @@ export type Database = {
     Views: Record<string, never>
     Functions: {
       save_generated_service: {
-        Args: { p_lgu_id: string; p_template_code: string; p_service: Record<string, unknown>; p_flags: Record<string, unknown>[]; p_source_prompt: string | null; p_generated_by: string; p_generator_model: string }
+        Args: { p_lgu_id: string; p_template_code: string; p_service: Record<string, unknown>; p_flags: Record<string, unknown>[]; p_source_prompt: string | null; p_generated_by: string; p_generator_model: string; p_doc_template_path: string; p_supersedes_service_id: string | null }
         Returns: { service_id: string; status: ServiceStatus }[]
       }
       publish_reviewed_service: {

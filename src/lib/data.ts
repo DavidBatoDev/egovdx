@@ -51,6 +51,7 @@ export async function listServicesForLgu(lguId: string): Promise<PublishedServic
     .from('lgu_services')
     .select(SERVICE_JOIN)
     .eq('lgu_id', lguId)
+    .neq('status', 'archived')
     .order('created_at', { ascending: true })
 
   if (error) throw new Error(`listServicesForLgu: ${error.message}`)
@@ -115,8 +116,9 @@ export async function getRequestByHash(hash: string): Promise<RequestWithService
 }
 
 export async function listRequestsForLgu(lguId: string): Promise<RequestWithService[]> {
-  const services = await listServicesForLgu(lguId)
-  const ids = services.map((s) => s.id)
+  const { data: serviceRows, error: serviceError } = await supabaseAdmin().from('lgu_services').select('id').eq('lgu_id', lguId)
+  if (serviceError) throw new Error(`listRequestsForLgu: ${serviceError.message}`)
+  const ids = (serviceRows ?? []).map((service) => service.id)
   if (ids.length === 0) return []
 
   const { data, error } = await supabaseAdmin()

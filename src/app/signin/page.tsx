@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { Badge, ButtonAnchor, Card, CardBody } from '@/components/ui'
+import { safeNextForRole, type AuthenticatedRole } from '@/lib/auth/state'
 import { egovMode } from '@/lib/egov/client'
 
 export const metadata = { title: 'Sign in — eSee LGU' }
@@ -19,8 +20,10 @@ export default async function SignInPage({
 }) {
   const { next = '', error } = await searchParams
   const mock = egovMode('SSO') === 'mock'
-  const q = (persona: string, fallback?: string) =>
-    `/api/auth/egov/login?persona=${persona}&next=${encodeURIComponent(next || fallback || '')}`
+  const q = (persona: AuthenticatedRole, fallback: string) => {
+    const destination = safeNextForRole(next, persona, fallback)
+    return `/api/auth/egov/login?persona=${persona}&next=${encodeURIComponent(destination)}`
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">

@@ -35,11 +35,15 @@ export default function StudioClient({ harness = false, dashboardHref = '/lgu' }
   }
 
   async function confirm() {
-    if (!result) return
+    if (!result || !template) return
     setBusy(true); setError('')
     try {
       const service = JSON.parse(schema)
-      const response = await fetch('/api/studio/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ service, engine: result.generation.engine, model: result.generation.model, sourcePrompt: prompt, generatedBy: result.extraction ? 'upload' : 'ai' }) })
+      const data = new FormData()
+      data.append('service', JSON.stringify(service)); data.append('file', template)
+      data.append('engine', result.generation.engine); data.append('model', result.generation.model)
+      data.append('sourcePrompt', prompt); data.append('generatedBy', result.extraction ? 'upload' : 'ai')
+      const response = await fetch('/api/studio/confirm', { method: 'POST', body: data })
       const json = await response.json()
       if (!response.ok) throw new Error(json.error || 'Save failed')
       setSaved(json as SavedResult)

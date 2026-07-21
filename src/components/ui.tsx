@@ -210,6 +210,7 @@ const STATUS_TONE: Record<string, Tone> = {
   draft: 'neutral',
   flagged: 'warn',
   rejected: 'danger',
+  archived: 'neutral',
   paid: 'success',
   waived: 'accent',
   unpaid: 'warn',

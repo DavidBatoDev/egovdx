@@ -4,15 +4,44 @@ import { listRequestsForLgu } from '@/lib/data'
 import { peso } from '@/lib/format'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { RequestQueue } from './request-queue'
-import StudioClient from './studio-client'
+import { CreationHub } from './creation-hub'
+import { AiInterviewClient } from './ai-interview-client'
+import { ManualServiceClient } from './manual-service-client'
+import { WebsiteEditor } from './website-editor'
+import { getLguSiteEditorState } from '@/lib/lgu-site/data'
+import { listServicesForLgu } from '@/lib/data'
 
-export function OfficerStudio({ dashboardHref }: { dashboardHref: string }) {
-  return (
-    <div className="space-y-6">
-      <PageHeader eyebrow="LGU workspace" title="AI eService Studio" description="Draft inside DICT-approved bounds, inspect every field, then publish or route anomalies for review." />
-      <StudioClient dashboardHref={dashboardHref} />
-    </div>
-  )
+export function OfficerStudioHub({ dashboardHref }: { dashboardHref: string }) {
+  return <CreationHub baseHref={dashboardHref} />
+}
+
+export function OfficerAiStudio({ dashboardHref, lguId }: { dashboardHref: string; lguId: string }) {
+  return <div className="space-y-6"><PageHeader eyebrow="Create eService" title="AI-assisted setup" description="OpenAI asks the practical questions an LGU needs to answer, while DICT rules remain the final authority." /><AiInterviewClient baseHref={dashboardHref} lguId={lguId} /></div>
+}
+
+export async function OfficerManualStudio({ dashboardHref, lguId, serviceId }: { dashboardHref: string; lguId: string; serviceId: string | null }) {
+  const db = supabaseAdmin()
+  const [{ data: templates, error: templateError }, serviceResult] = await Promise.all([
+    db.from('service_templates').select('*').order('name'),
+    serviceId ? db.from('lgu_services').select('*').eq('id', serviceId).eq('lgu_id', lguId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+  ])
+  if (templateError) throw templateError
+  if (serviceResult.error) throw serviceResult.error
+  if (serviceId && !serviceResult.data) throw new Error('SERVICE_NOT_FOUND')
+  return <ManualServiceClient baseHref={dashboardHref} lguId={lguId} templates={templates ?? []} initial={serviceResult.data} />
+}
+
+export async function OfficerWebsite({ lguId }: { lguId: string }) {
+  const db = supabaseAdmin()
+  const [{ data: lgu, error }, state, allServices] = await Promise.all([
+    db.from('lgus').select('id,name,type').eq('id', lguId).maybeSingle(),
+    getLguSiteEditorState(lguId),
+    listServicesForLgu(lguId),
+  ])
+  if (error) throw error
+  if (!lgu) throw new Error('LGU_NOT_FOUND')
+  const services = allServices.filter((service) => service.status === 'published')
+  return <div className="space-y-6"><PageHeader eyebrow="LGU website" title="Website CMS" description="Brand your native eGovPH page, preview the complete citizen experience, then publish one safe snapshot." /><WebsiteEditor lgu={lgu} initialConfig={state.config} initialRevision={state.revision} publishedAt={state.publishedAt} services={services} /></div>
 }
 
 export async function OfficerRequests({ session }: { session: Session }) {

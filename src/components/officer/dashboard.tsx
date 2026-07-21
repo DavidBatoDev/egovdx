@@ -5,7 +5,6 @@ import { peso } from '@/lib/format'
 import type { OfficerLguScope } from '@/lib/lgu-scope'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { RequestQueue } from './request-queue'
-import StudioClient from './studio-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,10 +55,10 @@ export default async function OfficerDashboard({ session, scope }: { session: Se
             <h1 className="font-display text-3xl leading-tight md:text-4xl">Good day, {session.name.split(' ')[0]}.</h1>
             <p className="max-w-2xl text-sm leading-6 text-white/80">Manage every part of your local digital service—from AI-assisted creation to approval and measurable citizen outcomes—in one secure workspace.</p>
           </div>
-          <div className="flex items-start"><ButtonLink href="#studio" className="bg-white !text-brand hover:bg-brand-soft">Create eService with AI</ButtonLink></div>
+          <div className="flex items-start"><ButtonLink href={`${scope.canonicalBase}/studio`} className="bg-white !text-brand hover:bg-brand-soft">Create eService</ButtonLink></div>
         </div>
         <nav aria-label="LGU workspace sections" className="flex gap-1 overflow-x-auto border-t border-white/20 px-3 py-2 text-sm whitespace-nowrap md:px-6">
-          {[['#overview', 'Overview'], ['#studio', 'AI eService Studio'], ['#approvals', `Approval queue${waiting.length ? ` (${waiting.length})` : ''}`], ['#analytics', 'Analytics']].map(([href, label]) => <a key={href} href={href} className="rounded-sm px-3 py-2 font-bold text-white/80 hover:bg-white/10 hover:text-white">{label}</a>)}
+          {[['#overview', 'Overview'], [`${scope.canonicalBase}/studio`, 'Create eService'], [`${scope.canonicalBase}/website`, 'Website CMS'], ['#approvals', `Approval queue${waiting.length ? ` (${waiting.length})` : ''}`], ['#analytics', 'Analytics']].map(([href, label]) => <a key={href} href={href} className="rounded-sm px-3 py-2 font-bold text-white/80 hover:bg-white/10 hover:text-white">{label}</a>)}
         </nav>
       </section>
 
@@ -75,20 +74,15 @@ export default async function OfficerDashboard({ session, scope }: { session: Se
 
       <section className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
         <Card>
-          <CardHeader title="Your eServices" description="Every published service is immediately available in the eGovPH citizen catalog." action={<ButtonLink href="#studio" variant="ghost">Add service</ButtonLink>} />
+          <CardHeader title="Your eServices" description="Every published service is immediately available in the eGovPH citizen catalog." action={<ButtonLink href={`${scope.canonicalBase}/studio`} variant="ghost">Add service</ButtonLink>} />
           <CardBody className="p-0">
-            {services.length ? <ul className="divide-y divide-border">{services.map((service) => <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4"><div><p className="font-semibold">{service.template.name}</p><p className="mt-0.5 text-sm text-muted">{service.approval_office ?? 'LGU approval office'} · {service.required_docs.length} required document{service.required_docs.length === 1 ? '' : 's'}</p></div><div className="flex items-center gap-2"><StatusBadge status={service.status} />{service.status === 'published' ? <ButtonLink href={`/citizen/lgus/${lgu.id}`} variant="ghost">Citizen view</ButtonLink> : null}</div></li>)}</ul> : <div className="py-4"><EmptyState title="Your LGU is ready for its first eService" description="Upload a local template and describe the service once—the AI handles the structured setup." /></div>}
+            {services.length ? <ul className="divide-y divide-border">{services.map((service) => <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4"><div><p className="font-semibold">{service.display_name || service.template.name}</p><p className="mt-0.5 text-sm text-muted">{service.approval_office ?? 'LGU approval office'} · {service.required_docs.length} required document{service.required_docs.length === 1 ? '' : 's'}</p></div><div className="flex items-center gap-2"><StatusBadge status={service.status} /><ButtonLink href={`${scope.canonicalBase}/studio/manual/${service.id}`} variant="ghost">Edit</ButtonLink>{service.status === 'published' ? <ButtonLink href={`/citizen/lgus/${lgu.id}`} variant="ghost">Citizen view</ButtonLink> : null}</div></li>)}</ul> : <div className="py-4"><EmptyState title="Your LGU is ready for its first eService" description="Choose AI-assisted or manual setup to create the first service." /></div>}
           </CardBody>
         </Card>
         <Card className="bg-brand-soft">
           <CardHeader title="How this workspace works" description="A fixed DICT-approved flow keeps every service safe and consistent." />
           <CardBody><ol className="space-y-4 text-sm"><li className="flex gap-3"><span className="font-display text-2xl text-brand">01</span><span><strong>Describe the service</strong><br /><span className="text-muted">AI prepares the form, fee and routing within approved bounds.</span></span></li><li className="flex gap-3"><span className="font-display text-2xl text-brand">02</span><span><strong>Publish with oversight</strong><br /><span className="text-muted">Conforming services go live; exceptions go to DICT review.</span></span></li><li className="flex gap-3"><span className="font-display text-2xl text-brand">03</span><span><strong>Approve without retyping</strong><br /><span className="text-muted">Verified citizen data and evidence are already attached to each request.</span></span></li></ol></CardBody>
         </Card>
-      </section>
-
-      <section id="studio" className="scroll-mt-6 space-y-4 border-t border-border pt-8">
-        <PageHeader eyebrow="Create" title="AI eService Studio" description="Turn your local permit or certificate into an eGovPH-native service without configuring a workflow by hand." />
-        <StudioClient dashboardHref={scope.canonicalBase} />
       </section>
 
       <section id="approvals" className="scroll-mt-6 space-y-4 border-t border-border pt-8">
