@@ -48,7 +48,7 @@ export async function pushSms(
       return normalizeSms(raw)
     },
     () => {
-      console.log(`[emessage:mock] → ${number}: ${message}`)
+      console.log(`[emessage:mock] accepted issuance message for ${number.slice(0, 4)}••••${number.slice(-3)}`)
       return { messageId: 'mock-message-id', accepted: true }
     },
   )

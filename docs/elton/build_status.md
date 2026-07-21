@@ -1,88 +1,45 @@
 # Elton build status
 
-Updated after the first implementation pass.
+Updated after end-to-end unification.
 
-## Built
+## Unified
 
-### eGOV PAY
+- **LGU onboarding:** PSA-backed lookup and registration, duplicate protection,
+  officer authorization, immediate officer-to-LGU binding, refreshed session,
+  and the deliberate zero-service dashboard.
+- **eGOV PAY:** documented custom auth and HMAC contract, deterministic request
+  transaction IDs, full/partial/zero-fee waiver handling, persisted checkout,
+  callback and citizen-triggered reconciliation, and `/pay/[requestId]`.
+- **Approval queue:** LGU/office scoping, verified-evidence review, paid/waived
+  guard, rejection notes, and an atomic approval claim.
+- **Issuance orchestration:** LGU/year control-number sequence, immutable PDF,
+  honest chain source, resumable retries, issued-document persistence, and a
+  chronological audit trail.
+- **eMessage:** one issuance notification with E.164 normalization, stored
+  delivery status/source, and a noted manual retry for failed or uncertain SMS.
+- **Analytics:** LGU-scoped request count, completion rate, median issuance time,
+  paid fees, waived count, and an honest no-data state.
 
-- Updated `src/lib/egov/pay.ts` to use the documented eGOV PAY endpoints:
-  `POST /api/v1/transaction`, `GET /api/v1/transaction/{uuid}`, and
-  `PUT /api/v1/transaction/{uuid}/void`.
-- Uses the required `X-eGovPay-Token` header through shared `authHeaders()`.
-- Generates the required HMAC-SHA256 digest from `amount|txnid` using the API
-  token as the key.
-- Normalizes provider payloads into `PaymentIntent` and preserves an honest
-  live/mock/fallback result source.
-- Added `POST /api/pay/callback`, which reconciles callback UUIDs with the
-  gateway, updates a confirmed paid request, and records an audit event.
-- Added the `/implementation/egov-pay` integration harness.
+## Verification
 
-### eMessage
+- Migration `004_elton_transaction_pipeline.sql` is applied and its request
+  columns, control sequence table, and approval RPC are present.
+- The Elton integration suite covers payment, waiver, ownership denial,
+  approval, idempotent re-approval, PDF/chain/SMS, rejection, queue, and analytics.
+- Headed browser QA covers citizen payment, one-click officer issuance, and
+  analytics.
+- Earl's focused 21-check suite remains green after issuance refactoring.
 
-- Updated `src/lib/egov/emessage.ts` to use `X-EMESSAGE-Auth` and the documented
-  body shape: `{ number, message }`.
-- Philippine mobile inputs now normalize to E.164 `+639…` format.
-- Added SMS response normalization and retained `issuedSmsBody()` as the single
-  issuance-notification formatter.
-- Added the `/implementation/emessage` integration harness.
+## Controlled live status
 
-### LGU onboarding
+The configured eGOV PAY token is a test token, but `EGOV_PAY_MODE` remains
+`mock`. eMessage also remains `mock`, and no `EGOV_EMESSAGE_TEST_NUMBER` is
+configured. No external transaction or SMS was created during automated QA.
+Switch each integration independently only for the controlled live proof; never
+send a QA notification to a citizen's production number.
 
-- Added `supabase/seed_psgc.sql`, an idempotent PSGC seed covering NCR and the
-  Bulacan/Marilao path needed for the demo.
-- Added `src/lib/psgc.ts` with reusable `searchPsgc()` and `getPsgcEntry()`
-  functions, keeping lookup logic out of components.
-- Added protected PSA search and LGU registration routes under `src/app/api/lgus/`.
-- Added `/console/register`, with searchable PSA results, official-email
-  validation, duplicate protection, and a registration submission flow.
-- Added `/console` as the post-registration dashboard, including an intentional
-  `0 active eServices` empty state for a new LGU.
-- Added the `/implementation/lgu-onboarding` harness and a corresponding QA flow.
+## Integration boundary
 
-### Workflow and validation
-
-- Updated the implementation manifest: onboarding is `unified`; eGOV PAY and
-  eMessage are `ready`.
-- `npx tsc --noEmit` passes.
-- `git diff --check` passes.
-
-## Still to build
-
-### Payment flow integration
-
-- Build the citizen-facing `src/app/pay/` checkout/return experience.
-- Wire payment creation, waiver handling, persistence of payment UUID/URL/txnid,
-  and payment-status polling into Jasmin's citizen request and track flow.
-- Ensure zero-fee and waived requests skip the payment gateway entirely while
-  recording `fee_status = 'waived'` and the applied waiver.
-
-### Approval queue and issuance orchestration
-
-- Build `src/app/console/requests/` and `src/app/api/requests/[id]/approve`.
-- Filter requests by the signed-in officer's LGU and approval office.
-- Display liveness result, eVerify reference, fee state, supporting documents,
-  and submitted form values before approval.
-- On approval: set `approved`, generate the PDF, anchor its hash, send SMS,
-  write an audit event for every step, then set `issued`.
-- Add idempotent retry/error behavior so a chain or SMS failure does not repeat
-  document generation or send duplicate notifications.
-
-Earl's `generateDocument(request)`, `anchorHash()`, and `verifyAnchor()` contracts
-now exist and the standalone issuance route is tested, so this work is no longer
-blocked on Earl. Elton still needs to build the approval action that orchestrates
-those contracts with `pushSms()` and makes retries idempotent.
-
-### Analytics (cuttable)
-
-- Build `src/app/console/analytics/` only after the payment and approval flows
-  are unified.
-- Show LGU-scoped request volume, completion rate, and median time to issuance.
-
-## Ownership notes
-
-The completed changes use Elton-owned paths where available. Supporting files
-outside the listed ownership paths were intentionally added only to keep logic
-reusable (`src/lib/psgc.ts`), provide the required post-registration destination
-(`src/app/console/page.tsx`), and satisfy the project workflow (implementation
-harnesses, status board, and QA flow).
+Jasmin's eGovPH shell, `/apply`, and `/track` remain separate work. Elton starts
+from an existing identity-verified request and exposes the payment and officer
+contracts those citizen routes will call.

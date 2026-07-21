@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const db = supabaseAdmin()
     const { data: request, error } = await db
       .from('requests')
-      .select('id, fee_status')
+      .select('id, fee_status, fee_due, payment_txnid')
       .eq('payment_uuid', uuid)
       .maybeSingle()
     if (error) throw new Error(error.message)
@@ -24,10 +24,12 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await checkPayment(uuid)
-    if (result.data.status === 'paid' && request.fee_status !== 'paid') {
+    const identityMatches = result.data.transactionId === request.payment_txnid
+    const amountMatches = result.source !== 'live' || result.data.amount === Number(request.fee_due)
+    if (result.data.status === 'paid' && identityMatches && amountMatches && request.fee_status !== 'paid') {
       const { error: updateError } = await db
         .from('requests')
-        .update({ fee_status: 'paid', payment_ref: result.data.referenceNumber })
+        .update({ fee_status: 'paid', payment_ref: result.data.referenceNumber, payment_source: result.source, payment_checked_at: new Date().toISOString() })
         .eq('id', request.id)
       if (updateError) throw new Error(updateError.message)
     }
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
       payment_status: result.data.status,
       payment_reference: result.data.referenceNumber,
       source: result.source,
+      identity_matches: identityMatches,
+      amount_matches: amountMatches,
     })
     return NextResponse.json({ received: true })
   } catch (err) {
