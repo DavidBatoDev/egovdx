@@ -292,7 +292,7 @@ export async function generateDocument(request: RequestWithService): Promise<Iss
     thickness: 0.5,
     color: rgb(0.8, 0.8, 0.8),
   })
-  page.drawText('This document was digitally issued via eGovDX powered by eGovPH.', {
+  page.drawText('This document was digitally issued via eSee LGU powered by eGovPH.', {
     x: margin,
     y: footerY + 6,
     size: 7,

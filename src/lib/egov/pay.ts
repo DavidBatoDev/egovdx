@@ -6,7 +6,7 @@ import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 export type PaymentIntent = {
   /** eGOV PAY's transaction UUID; use this for status checks and voids. */
   uuid: string
-  /** Merchant-generated transaction ID (the eGovDX request ID). */
+  /** Merchant-generated transaction ID (the eSee LGU request ID). */
   transactionId: string
   referenceNumber: string | null
   /** Hosted gateway page. Null for a status-only response. */
@@ -47,7 +47,7 @@ function paymentStatus(value: unknown): PaymentIntent['status'] {
   return 'pending' // e.g. INITIAL / PENDING
 }
 
-/** The sole boundary between provider payload variants and eGovDX types. */
+/** The sole boundary between provider payload variants and eSee LGU types. */
 export function normalizePayment(
   raw: Record<string, unknown>,
   fallback: Pick<PaymentIntent, 'uuid' | 'transactionId' | 'amount'>,

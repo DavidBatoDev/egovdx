@@ -56,7 +56,7 @@ export async function pushSms(
 
 export function issuedSmsBody(serviceName: string, controlNumber: string, url: string) {
   return (
-    `eGovDX: Your ${serviceName} (${controlNumber}) has been approved and is ready ` +
+    `eSee LGU: Your ${serviceName} (${controlNumber}) has been approved and is ready ` +
     `for download. View and verify: ${url}`
   )
 }

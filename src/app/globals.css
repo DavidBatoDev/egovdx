@@ -1,38 +1,87 @@
 @import "tailwindcss";
 
 /*
- * Palette leans on Philippine government blue with a warm gold accent. Light
- * mode only, deliberately — this gets screen-recorded, and a theme toggle is
- * one more thing that can look wrong on camera.
+ * eSee LGU design system — Philippine government color standards (CHED
+ * palette) plus the eGovPH flag-tricolor logo. Light mode only, deliberately:
+ * this gets screen-recorded, and a theme toggle is one more thing that can
+ * look wrong on camera. See esee_lgu_design_system.md for the full spec.
  */
 :root {
-  --background: #f6f7f9;
+  /* Primary */
+  --color-primary: #0032a0;
+  --color-accent-red: #c8102e;
+  --color-accent-yellow: #fdda25;
+  --color-white: #ffffff;
+  --color-black: #25282a;
+
+  /* Blue tints */
+  --color-blue-900: #1a1f4c;
+  --color-blue-800: #13336d;
+  --color-blue-500: #69acdf;
+  --color-blue-300: #a3ccee;
+  --color-blue-100: #d4edfc;
+
+  /* Red tints */
+  --color-red-800: #841617;
+  --color-red-500: #ea5153;
+  --color-red-300: #f6b1a6;
+  --color-red-100: #fcd9ca;
+
+  /* Yellow tints */
+  --color-yellow-700: #d8af00;
+  --color-yellow-500: #ffdf43;
+  --color-yellow-300: #fff482;
+  --color-yellow-100: #fff7b2;
+
+  /* Surfaces */
+  --background: #ffffff;
   --surface: #ffffff;
-  --foreground: #10151c;
-  --muted: #5b6673;
-  --border: #dfe3e8;
+  --surface-muted: var(--color-blue-100);
+  --surface-nav: var(--color-primary);
+  --surface-footer: var(--color-blue-900);
 
-  --brand: #0b3d91;
-  --brand-hover: #092f70;
-  --brand-soft: #e8eefb;
+  /* Text */
+  --foreground: var(--color-black);
+  --muted: #4a4f54;
+  --border: var(--color-blue-300);
+  --border-strong: var(--color-blue-500);
+  --border-input: var(--color-black);
 
-  --accent: #b8860b;
-  --accent-soft: #fdf6e3;
+  /* Brand (nav links, primary actions, "government blue") */
+  --brand: var(--color-primary);
+  --brand-hover: var(--color-blue-800);
+  --brand-soft: var(--color-blue-100);
 
-  --success: #0f7b3f;
-  --success-soft: #e6f4ec;
-  --warn: #a15c00;
-  --warn-soft: #fdf1e0;
-  --danger: #b3261e;
-  --danger-soft: #fdeceb;
+  /*
+   * Government convention, stated deliberately: success is primary blue, not
+   * green. Approved/Verified/Live all read as the same trusted blue as the
+   * rest of the brand rather than a different hue.
+   */
+  --success: var(--color-primary);
+  --success-soft: var(--color-blue-100);
+
+  --warn: var(--color-yellow-700);
+  --warn-soft: var(--color-yellow-100);
+
+  --danger: var(--color-accent-red);
+  --danger-soft: var(--color-red-100);
+
+  /* Accent — golden yellow, a shade apart from --warn so the two read as distinct */
+  --accent: var(--color-yellow-700);
+  --accent-soft: var(--color-yellow-300);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-nav: var(--surface-nav);
+  --color-surface-footer: var(--surface-footer);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-input: var(--border-input);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
@@ -44,14 +93,22 @@
   --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /*
+   * Georgia for page titles and section headings only — the "this is a
+   * government document" signal. Helvetica carries every other piece of UI:
+   * body copy, labels, buttons, nav. Both are system fonts; no webfont load.
+   */
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', Consolas, Monaco, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 0.875rem; /* 14px body — dense and information-rich, not 16px consumer-friendly */
 }
 
 /* Focus ring that stays visible against both the page and brand-blue buttons. */
@@ -59,3 +116,7 @@ body {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+/* Government sites don't animate between pages or on scroll. Keep only the
+   restrained micro-interactions the design system allows: button hovers and
+   modal fades, both handled per-component via Tailwind's transition utilities. */

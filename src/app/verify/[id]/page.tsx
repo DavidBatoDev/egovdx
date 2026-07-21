@@ -177,7 +177,7 @@ export default async function VerifyPage({ params }: Props) {
 
       <p className="text-center text-xs text-muted">
         Verified by{' '}
-        <span className="font-semibold text-brand">eGovDX</span> powered by eGovPH ·{' '}
+        <span className="font-semibold text-brand">eSee LGU</span> powered by eGovPH ·{' '}
         <a href="/verify" className="underline">
           Verify another document
         </a>

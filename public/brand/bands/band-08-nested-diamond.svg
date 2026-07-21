@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 1200">
+<rect x="0" y="0" width="200" height="1200" fill="#0032A0"/>
+<path d="M 100,50 L 150,100 L 100,150 L 50,100 Z" fill="#FFFFFF"/>
+<path d="M 100,75 L 125,100 L 100,125 L 75,100 Z" fill="#FDDA25"/>
+<path d="M 100,250 L 150,300 L 100,350 L 50,300 Z" fill="#FFFFFF"/>
+<path d="M 100,275 L 125,300 L 100,325 L 75,300 Z" fill="#FDDA25"/>
+<path d="M 100,450 L 150,500 L 100,550 L 50,500 Z" fill="#FFFFFF"/>
+<path d="M 100,475 L 125,500 L 100,525 L 75,500 Z" fill="#FDDA25"/>
+<path d="M 100,650 L 150,700 L 100,750 L 50,700 Z" fill="#FFFFFF"/>
+<path d="M 100,675 L 125,700 L 100,725 L 75,700 Z" fill="#FDDA25"/>
+<path d="M 100,850 L 150,900 L 100,950 L 50,900 Z" fill="#FFFFFF"/>
+<path d="M 100,875 L 125,900 L 100,925 L 75,900 Z" fill="#FDDA25"/>
+<path d="M 100,1050 L 150,1100 L 100,1150 L 50,1100 Z" fill="#FFFFFF"/>
+<path d="M 100,1075 L 125,1100 L 100,1125 L 75,1100 Z" fill="#FDDA25"/>
+</svg>

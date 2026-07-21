@@ -153,7 +153,7 @@ export default function VerifyForm() {
 
       <p className="text-center text-xs text-muted">
         Powered by{' '}
-        <span className="font-semibold text-brand">eGovDX</span> · eGOV chain (Hyperledger Besu,
+        <span className="font-semibold text-brand">eSee LGU</span> · eGOV chain (Hyperledger Besu,
         Chain ID 13371)
       </p>
     </main>

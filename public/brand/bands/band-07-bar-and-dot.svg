@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 1200">
+<rect x="0" y="0" width="200" height="1200" fill="#C8102E"/>
+<rect x="0" y="60" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="75" r="10" fill="#25282A"/>
+<rect x="0" y="210" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="225" r="10" fill="#25282A"/>
+<rect x="0" y="360" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="375" r="10" fill="#25282A"/>
+<rect x="0" y="510" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="525" r="10" fill="#25282A"/>
+<rect x="0" y="660" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="675" r="10" fill="#25282A"/>
+<rect x="0" y="810" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="825" r="10" fill="#25282A"/>
+<rect x="0" y="960" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="975" r="10" fill="#25282A"/>
+<rect x="0" y="1110" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="1125" r="10" fill="#25282A"/>
+</svg>

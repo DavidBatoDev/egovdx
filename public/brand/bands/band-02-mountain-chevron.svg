@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 1200">
+<rect x="0" y="0" width="200" height="1200" fill="#C8102E"/>
+<path d="M 0,110 L 100,40 L 200,110" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,260 L 100,190 L 200,260" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,410 L 100,340 L 200,410" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,560 L 100,490 L 200,560" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,710 L 100,640 L 200,710" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,860 L 100,790 L 200,860" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,1010 L 100,940 L 200,1010" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<path d="M 0,1160 L 100,1090 L 200,1160" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<rect x="0" y="0" width="6" height="1200" fill="#FDDA25"/>
+<rect x="194" y="0" width="6" height="1200" fill="#FDDA25"/>
+</svg>

@@ -11,7 +11,7 @@ import {
   type FeatureStatus,
 } from './manifest'
 
-export const metadata = { title: 'Implementation status — eGovDX Local' }
+export const metadata = { title: 'Implementation status — eSee LGU' }
 
 const STATUS_TONE: Record<FeatureStatus, 'neutral' | 'brand' | 'success' | 'accent'> = {
   todo: 'neutral',

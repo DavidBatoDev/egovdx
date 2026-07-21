@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 1200">
+<defs>
+<pattern id="band-01" patternUnits="userSpaceOnUse" width="200" height="200">
+<rect x="0" y="0" width="200" height="200" fill="#0032A0"/>
+<path d="M 100,50 L 150,100 L 100,150 L 50,100 Z" fill="none" stroke="#FDDA25" stroke-width="8"/>
+<circle cx="100" cy="100" r="10" fill="#C8102E"/>
+</pattern>
+<pattern id="band-02" patternUnits="userSpaceOnUse" width="200" height="150">
+<rect x="0" y="0" width="200" height="150" fill="#C8102E"/>
+<path d="M 0,110 L 100,40 L 200,110" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="square"/>
+<rect x="0" y="0" width="6" height="150" fill="#FDDA25"/>
+<rect x="194" y="0" width="6" height="150" fill="#FDDA25"/>
+</pattern>
+<pattern id="band-03" patternUnits="userSpaceOnUse" width="200" height="120">
+<rect x="0" y="0" width="200" height="120" fill="#FDDA25"/>
+<rect x="0" y="0" width="200" height="24" fill="#0032A0"/>
+<rect x="90" y="62" width="20" height="20" fill="#C8102E"/>
+</pattern>
+<pattern id="band-04" patternUnits="userSpaceOnUse" width="200" height="60">
+<rect x="0" y="0" width="200" height="60" fill="#25282A"/>
+<path d="M 100,12 L 118,30 L 100,48 L 82,30 Z" fill="#FDDA25"/>
+<rect x="0" y="0" width="6" height="60" fill="#C8102E"/>
+<rect x="194" y="0" width="6" height="60" fill="#C8102E"/>
+</pattern>
+<pattern id="band-05" patternUnits="userSpaceOnUse" width="200" height="200">
+<rect x="0" y="0" width="200" height="200" fill="#0032A0"/>
+<rect x="0" y="20" width="200" height="4" fill="#FFFFFF"/>
+<rect x="0" y="34" width="200" height="4" fill="#FFFFFF"/>
+<rect x="0" y="48" width="200" height="4" fill="#FFFFFF"/>
+<rect x="0" y="80" width="200" height="40" fill="#FDDA25"/>
+</pattern>
+<pattern id="band-06" patternUnits="userSpaceOnUse" width="200" height="300">
+<rect x="0" y="0" width="200" height="300" fill="#FFFFFF"/>
+<polygon points="100,0 0,150 200,150" fill="#C8102E" stroke="#0032A0" stroke-width="2"/>
+<polygon points="100,300 0,150 200,150" fill="#0032A0" stroke="#0032A0" stroke-width="2"/>
+</pattern>
+<pattern id="band-07" patternUnits="userSpaceOnUse" width="200" height="150">
+<rect x="0" y="0" width="200" height="150" fill="#C8102E"/>
+<rect x="0" y="60" width="200" height="30" fill="#FDDA25"/>
+<circle cx="100" cy="75" r="10" fill="#25282A"/>
+</pattern>
+<pattern id="band-08" patternUnits="userSpaceOnUse" width="200" height="200">
+<rect x="0" y="0" width="200" height="200" fill="#0032A0"/>
+<path d="M 100,50 L 150,100 L 100,150 L 50,100 Z" fill="#FFFFFF"/>
+<path d="M 100,75 L 125,100 L 100,125 L 75,100 Z" fill="#FDDA25"/>
+</pattern>
+</defs>
+</svg>

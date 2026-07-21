@@ -1,15 +1,12 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import Image from 'next/image'
 import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
 import { Badge } from '@/components/ui'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'eGovDX Local — Configuration layer for eLGU',
+  title: 'eSee LGU — Configuration layer for eLGU',
   description:
     'Lets each LGU configure its own eServices within DICT-approved bounds — removing the configuration labor, not the oversight.',
 }
@@ -22,28 +19,39 @@ export default async function RootLayout({
   const session = await getSession().catch(() => null)
 
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
-        <header className="border-b border-border bg-surface">
+        {/*
+         * Nav is Royal Blue with white text — the "eGovPH family" signal. DICT
+         * and eGovPH marks come first as institutional endorsement, ahead of
+         * the product wordmark, per esee_lgu_design_system.md "Logo Usage".
+         * Both logos are mostly blue/dark artwork that disappears against
+         * Royal Blue, so each sits on its own small white chip — the doc's
+         * own suggested fix for the DICT seal, extended to eGovPH for the
+         * same contrast reason. The source PNGs are never cropped or recolored.
+         */}
+        <header className="bg-surface-nav">
           <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand text-sm font-bold text-white">
-                DX
+            <div className="flex items-center gap-3">
+              <span className="flex items-center rounded-sm bg-white px-1.5 py-1">
+                <Image src="/brand/dict-logo.png" alt="DICT" width={32} height={32} />
               </span>
-              <span className="font-semibold tracking-tight">eGovDX Local</span>
-              <span className="hidden text-xs text-muted sm:inline">
+              <span className="flex items-center rounded-sm bg-white px-1.5 py-1">
+                <Image src="/brand/egovph-logo.png" alt="eGovPH" width={98} height={28} />
+              </span>
+              <Link href="/" className="flex items-center gap-2 border-l border-white/25 pl-3">
+                <span className="font-bold tracking-tight text-white">eSee LGU</span>
+              </Link>
+              <span className="hidden text-xs text-white/70 sm:inline">
                 · Republic of the Philippines
               </span>
-            </Link>
+            </div>
 
             <nav className="flex items-center gap-1 text-sm">
               {session?.role === 'officer' ? (
                 <Link
                   href="/console"
-                  className="rounded-lg px-3 py-1.5 font-medium text-brand hover:bg-brand-soft"
+                  className="rounded-sm px-3 py-1.5 font-bold text-white hover:bg-white/10"
                 >
                   Officer console
                 </Link>
@@ -52,7 +60,7 @@ export default async function RootLayout({
               {session?.role === 'reviewer' ? (
                 <Link
                   href="/review"
-                  className="rounded-lg px-3 py-1.5 font-medium text-brand hover:bg-brand-soft"
+                  className="rounded-sm px-3 py-1.5 font-bold text-white hover:bg-white/10"
                 >
                   DICT review
                 </Link>
@@ -61,12 +69,12 @@ export default async function RootLayout({
               {session ? (
                 <>
                   <span className="hidden items-center gap-2 px-2 sm:flex">
-                    <span className="text-muted">{session.name}</span>
-                    <Badge tone="brand">{session.role}</Badge>
+                    <span className="text-white/70">{session.name}</span>
+                    <Badge tone="accent">{session.role}</Badge>
                   </span>
                   <a
                     href="/api/auth/egov/logout"
-                    className="rounded-lg px-3 py-1.5 text-muted hover:bg-background"
+                    className="rounded-sm px-3 py-1.5 text-white/70 hover:bg-white/10"
                   >
                     Sign out
                   </a>
@@ -74,7 +82,7 @@ export default async function RootLayout({
               ) : (
                 <Link
                   href="/signin"
-                  className="rounded-lg bg-brand px-3 py-1.5 font-medium text-white hover:bg-brand-hover"
+                  className="rounded-sm border border-white bg-white px-3 py-1.5 font-bold text-brand hover:bg-brand-soft"
                 >
                   Sign in with eGovPH
                 </Link>
@@ -85,10 +93,11 @@ export default async function RootLayout({
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
 
-        <footer className="border-t border-border bg-surface">
-          <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-muted">
-            A DICT-funded configuration layer for eGovPH. Services publish only after
-            automated validation, with flagged submissions routed to a human reviewer.
+        <footer className="bg-surface-footer">
+          <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-white/60">
+            DICT · eGovPH · eSee LGU — a DICT-funded configuration layer for eGovPH.
+            Services publish only after automated validation, with flagged submissions
+            routed to a human reviewer.
           </div>
         </footer>
       </body>

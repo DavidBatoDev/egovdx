@@ -1,7 +1,7 @@
 import { ButtonLink, Card, CardBody, PageHeader, Badge } from '@/components/ui'
 import { egovMode } from '@/lib/egov/client'
 
-export const metadata = { title: 'Sign in — eGovDX Local' }
+export const metadata = { title: 'Sign in — eSee LGU' }
 
 /**
  * One identity provider, two consoles.
@@ -26,7 +26,7 @@ export default async function SignInPage({
       <PageHeader
         eyebrow="eGovPH Single Sign-On"
         title="Sign in to continue"
-        description="eGovDX uses your eGovPH account for both citizen requests and LGU configuration. Your role is assigned by DICT, not chosen here."
+        description="eSee LGU uses your eGovPH account for both citizen requests and LGU configuration. Your role is assigned by DICT, not chosen here."
       />
 
       {error ? (

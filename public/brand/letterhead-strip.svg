@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2480 200">
+<rect x="0" y="0" width="2480" height="200" fill="#FFFFFF"/>
+<rect x="400" y="0" width="2080" height="200" fill="#0032A0"/>
+<path d="M 480,40 L 540,100 L 480,160 L 420,100 Z" fill="#FDDA25"/>
+<path d="M 640,40 L 700,100 L 640,160 L 580,100 Z" fill="#FDDA25"/>
+<path d="M 800,40 L 860,100 L 800,160 L 740,100 Z" fill="#FDDA25"/>
+<path d="M 960,40 L 1020,100 L 960,160 L 900,100 Z" fill="#FDDA25"/>
+<path d="M 1120,40 L 1180,100 L 1120,160 L 1060,100 Z" fill="#FDDA25"/>
+<path d="M 1280,40 L 1340,100 L 1280,160 L 1220,100 Z" fill="#FDDA25"/>
+<path d="M 1440,40 L 1500,100 L 1440,160 L 1380,100 Z" fill="#FDDA25"/>
+<path d="M 1600,40 L 1660,100 L 1600,160 L 1540,100 Z" fill="#FDDA25"/>
+<path d="M 1760,40 L 1820,100 L 1760,160 L 1700,100 Z" fill="#FDDA25"/>
+<path d="M 1920,40 L 1980,100 L 1920,160 L 1860,100 Z" fill="#FDDA25"/>
+<path d="M 2080,40 L 2140,100 L 2080,160 L 2020,100 Z" fill="#FDDA25"/>
+<path d="M 2240,40 L 2300,100 L 2240,160 L 2180,100 Z" fill="#FDDA25"/>
+<path d="M 2400,40 L 2460,100 L 2400,160 L 2340,100 Z" fill="#FDDA25"/>
+<rect x="0" y="197" width="2480" height="3" fill="#0032A0"/>
+</svg>
