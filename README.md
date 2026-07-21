@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# eGovDX Local
 
-## Getting Started
+eGovDX is a bounded configuration layer for DICT-approved local-government
+eServices. An officer describes a service, AI drafts its schema, deterministic
+rules enforce the approved bounds, and clean configurations publish for citizen
+use. Requests follow the fixed government flow:
 
-First, run the development server:
+`Request → Verification → Approval → Fee assessment → Issuance`
+
+Production: [egovdx.vercel.app](https://egovdx.vercel.app)
+
+## Implemented workflows
+
+- **David:** AI Studio, document extraction, bounded validation, DICT review,
+  generation caching, persistence, probes, and deployment.
+- **Earl:** PDF issuance, immutable storage, SHA-256 hashing, chain
+  anchoring/fallback, QR verification, control-number lookup, and tamper testing.
+- **Elton:** PSA-backed LGU onboarding, waiver/payment handling, officer queue,
+  atomic approval and control sequencing, PDF/chain/SMS orchestration, retries,
+  audit events, and LGU analytics.
+
+The Elton citizen boundary begins with an existing identity-verified request.
+Jasmin's native eGovPH shell, `/apply`, and `/track` remain separate work.
+
+## Important routes
+
+| Route | Purpose |
+|---|---|
+| `/console/studio` | Generate, preview, validate, and confirm an eService |
+| `/review` | Resolve blocked configurations and publish approved exceptions |
+| `/pay/[requestId]` | Assess waivers and reconcile eGovPay |
+| `/console/requests` | Review, reject, approve, issue, anchor, and notify |
+| `/console/analytics` | LGU-scoped operational metrics |
+| `/verify` and `/verify/[id]` | Public document/hash verification and tamper test |
+| `/implementation` | Integration harness and ownership board |
+
+## Local setup
+
+1. Copy `.env.local.template` to `.env.local` and fill the issued credentials.
+2. Apply `supabase/schema.sql` for a fresh database, or apply numbered migrations
+   in order for an existing project. Migration `004` adds Elton's transactional
+   approval, notification, and LGU/year control-sequence state.
+3. Load `supabase/seed.sql` and `supabase/seed_psgc.sql` for the demo records.
+4. Start the app:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Each integration has `live|mock` mode control. Fixtures are visibly labelled;
+mock/fallback chain receipts never appear as live anchors. Automated QA must use
+a `test_` eGovPay token, and live SMS requires an explicit
+`EGOV_EMESSAGE_TEST_NUMBER`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx tsc --noEmit
+npm run test:elton:unit
+npm run test:elton
+npm run test:earl
+npm run qa -- elton-payment elton-approval elton-analytics
+```
 
-## Learn More
+Browser QA is headed with 800 ms slow motion by default. Run `npx next build`
+only as the final pre-commit gate, as required by `AGENTS.md`.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Product intent and authoritative integration contracts live in `docs/`, with
+`docs/API_Reference.md` taking precedence over inferred or older API shapes.

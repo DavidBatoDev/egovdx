@@ -177,7 +177,7 @@ export const FEATURES: Feature[] = [
     slug: 'doc-issuance',
     name: 'Automated PDF issuance',
     owner: 'Earl',
-    status: 'ready',
+    status: 'unified',
     summary:
       "On approval, fills the LGU's template with verified data — letterhead, seal, control number, QR. Officer retypes nothing.",
     dependsOn: [],

@@ -7,6 +7,29 @@
 
 ---
 
+## Current delivery status
+
+All five Elton tasks are implemented and wired into real application routes.
+The detailed verification record is in [build_status.md](build_status.md).
+
+| Task | Status | Production route |
+|---|---|---|
+| eGOV PAY and waivers | `unified` | `/pay/[requestId]`, payment API, callback |
+| eMessage | `unified` | Approval/issuance orchestration and noted retry |
+| LGU registration | `unified` | `/console/register`, `/console` |
+| Approval queue | `unified` | `/console/requests` |
+| Analytics | `unified` | `/console/analytics` |
+
+Migration `004_elton_transaction_pipeline.sql` is applied. It adds atomic
+approval claims, resumable issuance state, notification provenance, and an
+LGU/year control-number sequence. Local and production headed journeys pass in
+mock mode. Controlled live eGovPay/eMessage proof remains intentionally gated.
+
+The citizen boundary starts from an existing identity-verified request. Jasmin's
+`/apply` and `/track` routes remain outside Elton's owned implementation.
+
+---
+
 ## About this list
 
 Four items looks like a lot next to everyone else's two or three. It isn't —
@@ -15,12 +38,12 @@ HMAC, one form, one table with a button. No open-ended design problems, no
 "figure out what the AI should return". Request and response shapes are written
 out below; it's mostly transcription.
 
-Do them in this order. **Task 1 and 2 are on the critical path; task 4 is
-cuttable.**
+The implementation followed this dependency order. Tasks 1–4 were the critical
+path; analytics was completed after the operational pipeline passed.
 
 ---
 
-## Task 1 — eGovPay (`/implementation/egov-pay`)
+## Task 1 — eGovPay (`/implementation/egov-pay`) · Unified
 
 My `src/lib/egov/pay.ts` guessed the paths and **missed the digest entirely**, so
 every request would have been rejected. Real contract:
@@ -37,7 +60,7 @@ Content-Type: application/json; charset=utf-8
 | `amount` | yes | total |
 | `settlement_template_uuid` | yes | `EGOV_PAY_SETTLEMENT_TEMPLATE_UUID` |
 | `txnid` | yes | **you** generate this — use the request id |
-| `redirect_url` | yes | back to `/track/<requestId>` |
+| `redirect_url` | yes | back to `/pay/<requestId>?returned=1` until Jasmin's track route lands |
 | `callback_url` | yes | your webhook, fires on every status change |
 | `digest` | yes | see below |
 | `currency`, `mobile`, `email`, `name`, `expires_at` | no | |
@@ -60,7 +83,7 @@ Response → `data.uuid`, `data.url` (hosted checkout), `data.channel.refno`.
 Store `uuid` in `requests.payment_uuid` and `url` in `payment_url`.
 
 Other endpoints:
-- `GET {base_url}/api/v1/transaction/{uuid}` → `data.payment_status` (`INITIAL` → paid)
+- `GET {base_url}/api/v1/transaction/{uuid}` → `data.payment_status` (`INITIAL` remains pending)
 - `PUT {base_url}/api/v1/transaction/{uuid}/void`
 
 A `test_`-prefixed token runs in test mode — no live funds move. Confirm the
@@ -75,12 +98,14 @@ work — and it's the more humane story in the pitch.
 
 ### Callback route
 
-`POST /api/pay/callback` — verify, update `fee_status`, append a `request_events`
-row. Locally it won't reach you; poll `checkPayment()` on the track page instead.
+`POST /api/pay/callback` verifies the gateway transaction ID and amount before
+updating `fee_status` and appending a `request_events` row. The payment page also
+reconciles through `GET /api/requests/[id]/payment` when callbacks cannot reach
+localhost.
 
 ---
 
-## Task 2 — eMessage (`/implementation/emessage`)
+## Task 2 — eMessage (`/implementation/emessage`) · Unified
 
 Smallest task on the board, ~20 lines, and it's the **cleanest impact story in
 the project**. For someone taking two jeepney rides and losing half a day's wage
@@ -104,7 +129,7 @@ the control number and verify URL.
 
 ---
 
-## Task 3 — LGU registration (`/implementation/lgu-onboarding`)
+## Task 3 — LGU registration (`/implementation/lgu-onboarding`) · Unified
 
 Act 1. Route: `/console/register`.
 
@@ -126,7 +151,7 @@ own municipality.
 
 ---
 
-## Task 4 — approval queue (`/implementation/approval-queue`)
+## Task 4 — approval queue (`/implementation/approval-queue`) · Unified
 
 Route: `/console/requests`. Act 4's trigger.
 
@@ -152,13 +177,12 @@ officer sees what was verified before they approve.
 
 ---
 
-## Task 5 — analytics (CUTTABLE)
+## Task 5 — analytics · Unified
 
 `/console/analytics`. Volume, completion rate, median time-to-issue.
 
-**Only if tasks 1–4 are done.** It's in the draft flow but it's the least
-load-bearing item on the board — nothing else depends on it, and no judging
-criterion rewards it directly. Cut it without guilt.
+This was implemented after tasks 1–4 passed. It is LGU-scoped and shows request
+volume, completion rate, median issuance time, paid fees, and waived requests.
 
 ---
 
@@ -170,6 +194,9 @@ export async function generatePayment(amount: number, description: string, txnid
 export async function checkPayment(uuid: string): Promise<EgovResult<PaymentIntent>>
 export async function pushSms(mobile: string, message: string): Promise<EgovResult<SmsResult>>
 export async function searchPsgc(query: string): Promise<PsgcEntry[]>
+export async function startRequestPayment(requestId: string, citizenSub: string, waiverCategory?: string): Promise<PaymentState>
+export async function reconcileRequestPayment(requestId: string, citizenSub: string): Promise<PaymentState>
+export async function approveAndIssue(requestId: string, officerSub: string): Promise<ApprovalResult>
 ```
 
 ---
@@ -181,5 +208,6 @@ src/lib/egov/pay.ts, emessage.ts
 src/app/pay/, src/app/api/pay/
 src/app/console/register/, requests/, analytics/
 src/app/api/lgus/, src/app/api/requests/
+src/lib/payments/, src/lib/issuance/
 supabase/seed_psgc.sql
 ```

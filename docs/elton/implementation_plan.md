@@ -1,4 +1,8 @@
-# Elton implementation plan — payments, SMS, onboarding, and approval
+# Elton implementation plan — completed
+
+> **Status:** Implemented and unified. See [build_status.md](build_status.md) for
+> current routes, verification evidence, provider modes, and the Jasmin citizen
+> boundary. This file remains the implementation rationale and acceptance spec.
 
 This plan implements Elton's owned work in dependency order. It preserves the
 product boundary: LGUs configure a DICT-approved flow; officers retain the
