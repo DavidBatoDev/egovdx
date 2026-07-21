@@ -213,13 +213,12 @@ apply form until `VerifiedIdentity` is fixed.
 
 ### Shared delivery
 
-- [ ] Freeze and commit the three exported contracts with realistic mock data.
-- [ ] Keep every call behind `callEgov()` and each `EGOV_*_MODE=live|mock` flag.
-- [ ] Render a visible `<SourceBadge>` whenever a fixture supplies the result.
-- [ ] Keep each implementation harness working, then wire the same `src/lib/`
-  functions into the real sign-in and citizen-apply routes.
-- [ ] Add or update the owned browser-QA flow, run `npx tsc --noEmit`, and set
-  the relevant manifest entries to `ready` and then `unified`.
+- [ ] Freeze and commit the three exported contracts — contracts and mocks exist, but they are not committed yet.
+- [x] Keep calls behind callEgov() and EGOV_*_MODE flags.
+- [x] Show <SourceBadge> for mock/fallback results.
+- [ ] Keep all harnesses working and wire them into real routes — SSO and face-liveness are wired; an eVerify implementation harness is still
+  missing.
+- [ ] Add/update QA, typecheck, and mark unified — QA flow and tsc are done; the new QA flow still needs a successful run in mock mode before this is
 
 ### 1. Simplified SSO authentication
 
