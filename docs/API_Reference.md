@@ -1,8 +1,10 @@
-# eGovPH API — Consolidated Integration Reference
+# eGovPH API — Consolidated Integration Reference (SSO Authentication, no widget)
 
 A single reference collating the high-level catalog (`api_catalog_documentation_final.md`) with the correct routes, auth schemes, arguments, and worked examples pulled from each per-service file. Services appear in catalog order.
 
 Scoped to the 7 registered services this project integrates against: eGOV PH (SSO), #NationalID / eVerify, FACE LIVENESS, eMessage, eGov AI, eGOV PAY, eGOV chain. eReport and DBM COMPASS are not registered for this project (see `docs/01_hackathon_overview.md`) and are documented elsewhere if needed.
+
+**Why this file exists separately from `API_Reference.md`:** the source project (`~/CODE/proj/egovph/APIs/`) now has two eGOV PH docs. `integrations/egovph.md` only covers the client-side **SSO Widget** (mount the button/portal, get an `exchange_code` back) — it no longer documents the token/profile endpoints. The actual **Generate Access Token** and **SSO Authentication** endpoint contracts — `exchange_code`/`scope`/`partner_code`/`partner_secret` on `POST /api/token`, then `Bearer` → `POST /api/partner/sso_authentication` — live in the original, separate `egovph.md` (not the widget-only one). This file documents eGOV PH from that original source and skips the widget entirely, since the app talks to the token/profile endpoints directly rather than embedding the widget. Every other section is unchanged from `API_Reference.md`.
 
 > Placeholder variables (`{{base_url}}`, `{{base}}`, `{{baseUrl}}`, `{{rpcUrl}}`, `{{apiKey}}`, tokens, etc.) are Postman-environment variables — substitute your issued values. Note the base-variable spelling differs per service.
 
@@ -23,75 +25,15 @@ Scoped to the 7 registered services this project integrates against: eGOV PH (SS
 ## eGOV PH
 
 - **Category:** Single sign-on
-- **Description:** Single Sign-On integration for eGov partners. OAuth 2.0 authorization-code flow: after a user authenticates, exchange the issued code for an access token, then resolve the user's profile.
+- **Description:** Single Sign-On integration for eGov partners. OAuth 2.0 authorization-code flow: after a user authenticates (via whatever front-end you choose — this reference doesn't assume the widget), exchange the issued code for an access token, then resolve the user's profile.
 - **Test account:** `josie@yopmail.com`
-
-### Client-side: eGov SSO Widget
-
-A lightweight SSO widget that embeds eGovPH authentication into a native web app or React app. The widget renders the entire login UI (mobile/email entry → OTP → security notice → MPIN) and, on success, hands your callback an **`exchange_code`** — which your backend then exchanges for an access token via [Generate Access Token](#generate-access-token) below.
-
-> The widget returns an exchange code, **not** a token. Perform the token exchange server-side (it needs your `partner_secret`); never exchange from client-side JS. The exchange code is single-use and short-lived — exchange it immediately.
-
-**Native web app** — add the `<meta>` tags, define a global success handler, then drop in the widget markup + script:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="egov-environment" content="STAGING">
-  <meta name="egov-client-id" content="YOUR_CLIENT_ID">
-  <meta name="egov-sso-onsuccess" content="CUSTOM_ONSUCCESS_FUNCTION">
-  <script>
-    function CUSTOM_ONSUCCESS_FUNCTION(exchange_code) {
-      // Send exchange_code to your backend to exchange for an access token
-      console.log(exchange_code);
-    }
-  </script>
-</head>
-<body>
-  <div id="egov-sso-widget-button"></div>
-  <div id="egov-sso-widget-portal"></div>
-  <script async defer src="https://widgets.e.gov.ph/egov-hackathon-sso-widget.js"></script>
-</body>
-</html>
-```
-
-**React** — install `egov-hackathon-sso-widget`, then render the widget alongside the portal `<div>`:
-
-```jsx
-import EGovSSOWidget from 'egov-hackathon-sso-widget';
-
-export default () => (
-  <>
-    <EGovSSOWidget
-      environment="STAGING"
-      client_id="{{YOUR_CLIENT_ID}}"
-      on_success_function={(exchange_code) => { console.log(exchange_code); }}
-    />
-    <div id="egov-sso-widget-portal"></div>
-  </>
-);
-```
-
-**Configuration:**
-
-| Config | Native (`<meta name>`) | React (prop) | Values |
-|---|---|---|---|
-| Environment | `egov-environment` | `environment` | `STAGING` (use `PRODUCTION` only for live) |
-| Client ID | `egov-client-id` | `client_id` | Your app's registered client ID (environment-specific) |
-| Success callback | `egov-sso-onsuccess` | `on_success_function` | Global function name (native) / function ref (React), receives `exchange_code` |
-
-**Requirements & notes:**
-- Both `#egov-sso-widget-button` (mounts the trigger button) and `#egov-sso-widget-portal` (renders the login modal) must be present in the DOM — the portal is required even in React, since the modal renders outside the component tree.
-- Load the script with `async defer` to avoid blocking render.
-- The login screens are rendered entirely by the widget; your only integration points are the button mount, the portal mount, and the success callback.
+- **Source:** `APIs/egovph.md` (the original per-service doc — not `APIs/integrations/egovph.md`, which is widget-only).
 
 ### Generate Access Token
+
 `POST {{base_url}}/api/token`
 
-Exchanges an authorization (exchange) code for an access token via the eGov SSO service.
+Exchanges an authorization (exchange) code for an access token via the eGov SSO service. Part of the OAuth 2.0 authorization-code flow: after a user authenticates and an exchange code is issued, the partner system calls this endpoint to get an access token for subsequent API requests.
 
 - **Auth:** none (credentials in body)
 
@@ -128,13 +70,17 @@ curl --request POST \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
+**Note on `exchange_code`:** this reference doesn't prescribe how you obtain the exchange code — the SSO Widget (`integrations/egovph.md`) is one way to get one from a browser-based login, but any front-end flow that ends in a valid `exchange_code` works here. That widget's setup guide isn't reproduced in this file since it's a UI concern, not part of the token/profile contract.
+
 ### SSO Authentication
+
 `POST {{base_url}}/api/partner/sso_authentication`
 
 Resolves the authenticated user's profile for a partner app. Call after obtaining an access token.
@@ -150,7 +96,8 @@ curl --request POST \
   --header 'Authorization: Bearer {{access_token}}'
 ```
 
-Response · 200 OK (profile, abridged — source example includes `signature`, `signature_url`, and an `additional_information.health_data` block):
+Response · 200 OK (profile, abridged — the source example also includes `photo`, `signature`, `signature_url`, `street`, `postal`, `address_line_2`, `country_id`, `foreign_address`, and an `additional_information.health_data` block):
+
 ```json
 {
   "status": 200,
@@ -181,7 +128,8 @@ Response · 200 OK (profile, abridged — source example includes `signature`, `
   }
 }
 ```
-> The source `egovph.md` response is truncated mid-`additional_information`; fields above are the confirmed profile keys.
+
+> This response example was captured while `egovph.md` was still available; kept here since it reflects a real payload, independent of which token flow produced it.
 
 ---
 
@@ -192,6 +140,7 @@ Response · 200 OK (profile, abridged — source example includes `signature`, `
 - **Verification flow:** (1) get an `access_token` from `/api/auth`; (2) obtain a `face_liveness_session_id` from the Face Liveness Web SDK — `window.eKYC().start({ pubKey })`, then use `result.session_id` (public SDK key = `{{public_api_key}}`; see [eVerify Face Liveness Web SDK](#client-side-everify-face-liveness-web-sdk) under FACE LIVENESS); (3) submit to a verify endpoint.
 
 ### Authenticate (Generate Access Token)
+
 `POST {{base_url}}/api/auth`
 
 Server-to-server token for the eVerify API. Required by all verify endpoints.
@@ -213,6 +162,7 @@ curl --request POST \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "data": {
@@ -224,6 +174,7 @@ Response · 200 OK:
 ```
 
 ### Verify Personal Information
+
 `POST {{base_url}}/api/query`
 
 Compares demographic input + biometrics (Face Liveness) against the NIDAS database.
@@ -257,6 +208,7 @@ curl --request POST \
 ```
 
 Response · 200 OK (abridged — full response includes permanent + present address blocks and place-of-birth fields):
+
 ```json
 {
   "data": {
@@ -279,6 +231,7 @@ Response · 200 OK (abridged — full response includes permanent + present addr
 ```
 
 ### QR Check
+
 `POST {{base_url}}/api/query/qr/check`
 
 Decodes and decrypts a scanned National ID QR value and returns the verified demographics stored inside — **no biometrics**.
@@ -300,6 +253,7 @@ curl --request POST \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "data": { "pcn": "1234-1234-1234-1234" },
@@ -308,6 +262,7 @@ Response · 200 OK:
 ```
 
 ### QR Verify
+
 `POST {{base_url}}/api/query/qr`
 
 Full identity verification: scanned QR value **plus** matching biometrics (Face Liveness).
@@ -340,6 +295,7 @@ curl --request POST \
 - **Description:** Deliver SMS, email and in-app notices to citizens through a single messaging API. (Only Push SMS is documented in the source.)
 
 ### Push SMS
+
 `POST {{base_url}}/messaging/v1/sms/push`
 
 - **Auth:** Header `X-EMESSAGE-Auth: {{api_token}}` (required) · `Content-Type: application/json`
@@ -360,6 +316,7 @@ curl --request POST \
 ```
 
 Response · 201 Created:
+
 ```json
 { "data": { "message": "SMS was successfully created." } }
 ```
@@ -374,6 +331,7 @@ Response · 201 Created:
 - **Auth (all except token endpoint):** Bearer `{{hackathon_token}}`
 
 ### Generate Access Token
+
 `POST {{base}}/api/v1/egov/integration/token`
 
 Short-lived token for the eGov AI API. On success the test script stores it into the `hackathon_token` env var.
@@ -392,6 +350,7 @@ curl --request POST \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "access_token": "bebaddec-de7e-4d4e-91b1-ae3a73544b22",
@@ -402,6 +361,7 @@ Response · 200 OK:
 ```
 
 ### AI Assistant
+
 `POST {{base}}/api/v1/egov/integration/ai_assistant/generate`
 
 Answers a natural-language query about eGov services, scoped to a region/category.
@@ -424,6 +384,7 @@ curl --request POST \
 ```
 
 ### Speech Maker
+
 `POST {{base}}/api/v1/egov/integration/speech_maker/generate`
 
 Generates a speech tailored to a topic and locale/category.
@@ -446,6 +407,7 @@ curl --request POST \
 ```
 
 ### Tourism (Tourism Content Generator)
+
 `POST {{base}}/api/v1/egov/integration/tourism/generate`
 
 Generates travel/tourism content (itineraries, cultural insights) for a destination.
@@ -468,6 +430,7 @@ curl --request POST \
 ```
 
 ### Laws & Regulations
+
 `POST {{base}}/api/v1/egov/integration/laws_and_regulations/generate`
 
 Answers legal/regulatory questions via a model tuned to government regulations.
@@ -490,6 +453,7 @@ curl --request POST \
 ```
 
 ### Translator
+
 `POST {{base}}/api/v1/egov/integration/translator/generate`
 
 Translates text between languages.
@@ -517,6 +481,7 @@ curl --request POST \
 ```
 
 ### Document Extractor
+
 `POST {{base}}/api/v1/egov/integration/document_extractor/generate`
 
 Extracts structured fields from an uploaded document image/file via OCR + document analysis.
@@ -536,9 +501,11 @@ curl --request POST \
   --header 'Authorization: Bearer {{hackathon_token}}' \
   --form 'file=@/path/to/document.jpg'
 ```
+
 > The source cURL omits the `-F file=...` part; add it to actually upload a file.
 
 ### Token Credits
+
 `GET {{base}}/api/v1/egov/integration/credits`
 
 Returns the current API credit balance. Check before resource-intensive calls.
@@ -554,6 +521,7 @@ curl --request GET \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "credits_total": 200,
@@ -572,6 +540,7 @@ Response · 200 OK:
 - **Auth (all endpoints):** Header `X-eGovPay-Token: {{api_token}}` (required). A `test_`-prefixed token runs in test mode (no live funds move). `Content-Type: application/json; charset=utf-8`.
 
 ### Generate Payment
+
 `POST {{base_url}}/api/v1/transaction`
 
 Creates a payment transaction and returns a hosted payment-gateway link.
@@ -620,6 +589,7 @@ curl --request POST \
 ```
 
 Response · 201 Created:
+
 ```json
 {
   "data": {
@@ -631,6 +601,7 @@ Response · 201 Created:
 ```
 
 ### Check Transaction Details
+
 `GET {{base_url}}/api/v1/transaction/{{transaction_uuid}}`
 
 Returns transaction details by UUID.
@@ -647,6 +618,7 @@ curl --request GET \
 ```
 
 Response · 200 OK (abridged):
+
 ```json
 {
   "data": {
@@ -671,6 +643,7 @@ Response · 200 OK (abridged):
 ```
 
 ### Void Transaction
+
 `PUT {{base_url}}/api/v1/transaction/{{transaction_uuid}}/void`
 
 Voids a transaction by UUID.
@@ -687,6 +660,7 @@ curl --request PUT \
 ```
 
 Response · 200 OK:
+
 ```json
 { "data": { "message": "You have successfully voided this transaction." } }
 ```
@@ -703,6 +677,7 @@ Response · 200 OK:
 - **Request shape (all calls):** `POST {{rpcUrl}}` with a JSON-RPC 2.0 body: `{ "jsonrpc": "2.0", "method": "<method>", "params": [...], "id": <n> }`.
 
 ### rpc_modules (worked example)
+
 `POST {{rpcUrl}}`
 
 Lists enabled JSON-RPC namespaces on the Besu node.
@@ -717,6 +692,7 @@ curl --request POST \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -814,6 +790,7 @@ window.eKYC().start({ pubKey: "YOUR_PUBLIC_API_KEY" })
 ```
 
 ### Create Session
+
 `POST {{baseUrl}}/v1/liveness/session`
 
 Initializes a liveness session and returns a dynamic verification URL + session token.
@@ -837,6 +814,7 @@ curl --request POST \
 ```
 
 Response · 201 Created:
+
 ```json
 {
   "token": "00000000-0000-0000-0000-000000000000",
@@ -845,6 +823,7 @@ Response · 201 Created:
 ```
 
 ### Get Verification Result
+
 `GET {{baseUrl}}/v1/liveness/result/{{sessionToken}}`
 
 Protected backend-to-backend endpoint returning the final result for a session.
@@ -863,6 +842,7 @@ curl --request GET \
 ```
 
 Response · 200 OK:
+
 ```json
 {
   "status": "SUCCEEDED",
@@ -870,4 +850,3 @@ Response · 200 OK:
   "reference_image_url": "https://face-liveness-audit-staging-tokyo.s3.ap-northeast-1.amazonaws.com/liveness-audits/.../reference.jpg?AWSAccessKeyId=..."
 }
 ```
-
