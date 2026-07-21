@@ -42,6 +42,7 @@ export type AllowedRules = {
   waiver_categories?: string[]
   eligibility_keys?: string[]
   max_custom_fields?: number
+  typical_min_residency_years?: number
 }
 
 export type Lgu = {
@@ -108,6 +109,9 @@ export type LguService = {
   generator_model: string | null
   /** Which office signs off, e.g. 'Municipal Health Office'. */
   approval_office: string | null
+  generation_confidence: number | null
+  reviewed_by: string | null
+  reviewed_at: string | null
   submitted_at: string | null
   published_at: string | null
   created_at: string
@@ -121,7 +125,24 @@ export type ValidationFlag = {
   message: string
   field_path: string | null
   resolved: boolean
+  resolution_note: string | null
+  resolved_by: string | null
+  resolved_at: string | null
   created_at: string
+}
+
+export type StudioGenerationCache = {
+  id: string
+  lgu_id: string
+  input_kind: 'prompt' | 'extraction'
+  input_hash: string
+  result: unknown
+  engine: 'egov-ai' | 'openai' | 'mock'
+  model: string
+  source: 'live' | 'mock' | 'fallback'
+  primary_error: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type ServiceRequest = {
@@ -227,13 +248,20 @@ export type Database = {
           | 'generated_by'
           | 'generator_model'
           | 'approval_office'
+          | 'generation_confidence'
+          | 'reviewed_by'
+          | 'reviewed_at'
           | 'submitted_at'
           | 'published_at'
         >
       >
       validation_flags: Table<
         ValidationFlag,
-        Insertable<ValidationFlag, 'severity' | 'field_path' | 'resolved'>
+        Insertable<ValidationFlag, 'severity' | 'field_path' | 'resolved' | 'resolution_note' | 'resolved_by' | 'resolved_at'>
+      >
+      studio_generation_cache: Table<
+        StudioGenerationCache,
+        Insertable<StudioGenerationCache, 'primary_error' | 'updated_at'>
       >
       requests: Table<
         ServiceRequest,
@@ -267,7 +295,16 @@ export type Database = {
       request_events: Table<RequestEvent, Insertable<RequestEvent, 'payload'>>
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      save_generated_service: {
+        Args: { p_lgu_id: string; p_template_code: string; p_service: Record<string, unknown>; p_flags: Record<string, unknown>[]; p_source_prompt: string | null; p_generated_by: string; p_generator_model: string }
+        Returns: { service_id: string; status: ServiceStatus }[]
+      }
+      publish_reviewed_service: {
+        Args: { p_service_id: string; p_reviewer: string }
+        Returns: ServiceStatus
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

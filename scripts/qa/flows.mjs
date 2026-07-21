@@ -168,11 +168,19 @@ export const flows = [
     name: 'AI Studio — prompt box accepts an unrehearsed service description',
     owner: 'David',
     async run({ page, baseUrl, shot }) {
-      await page.goto(`${baseUrl}/api/auth/egov/login?persona=officer`)
-      await visit(page, `${baseUrl}/console/studio`)
+      const response = await page.goto(
+        `${baseUrl}/api/auth/egov/login?persona=officer&next=/console/studio`,
+        { waitUntil: 'domcontentloaded' },
+      )
+      const status = response?.status() ?? 0
+      if (status === 404) throw new NotBuiltError('/console/studio', status)
+      if (status >= 400) throw new Error(`/console/studio returned HTTP ${status}`)
+      if (!page.url().includes('/console/studio')) {
+        throw new Error(`Officer landed on ${page.url()}, expected /console/studio`)
+      }
 
       const prompt = page.locator('textarea').first()
-      await prompt.waitFor({ timeout: 10_000 })
+      await prompt.waitFor({ timeout: 30_000 })
 
       // Deliberately NOT the rehearsed demo prompt. The bar is a working app,
       // so the Studio has to handle a service nobody scripted.
@@ -181,8 +189,21 @@ export const flows = [
           'barangay clearance. Charge a fee of 300 pesos. Route approvals to the ' +
           'Municipal Transport Office.',
       )
-      await shot('studio-prompt')
-      return 'prompt accepted'
+      await page.getByRole('button', { name: 'Generate preview' }).click()
+      await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 45_000 })
+      await shot('studio-preview')
+      await page.getByRole('button', { name: 'Confirm and submit' }).click()
+      await page.getByText(/Published|Sent to DICT review/).waitFor({ timeout: 20_000 })
+
+      const upload = page.locator('input[type=file]')
+      await upload.setInputFiles({
+        name: 'blank-tricycle-form.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from('mock blank form for extractor QA'),
+      })
+      await page.getByText(/Model:/).waitFor({ timeout: 45_000 })
+      await shot('studio-upload-preview')
+      return 'unrehearsed prompt generated, confirmed, and blank form extracted'
     },
   },
 
@@ -193,8 +214,24 @@ export const flows = [
     async run({ page, baseUrl, shot }) {
       await page.goto(`${baseUrl}/api/auth/egov/login?persona=reviewer`)
       await visit(page, `${baseUrl}/review`)
+      for (let resolved = 0; resolved < 10; resolved++) {
+        const firstNote = page.getByPlaceholder('Required approved-exception note').first()
+        if (!(await firstNote.isVisible().catch(() => false))) break
+        await firstNote.fill('Approved exception for the recorded regional pilot.')
+        await firstNote.locator('xpath=..').getByRole('button', { name: 'Resolve' }).click()
+        await page.waitForLoadState('domcontentloaded')
+      }
+      const publish = page.getByRole('button', { name: 'Publish service' }).first()
+      if (await publish.isEnabled().catch(() => false)) {
+        await publish.click()
+        await page.waitForLoadState('domcontentloaded')
+      }
+      const body = await page.locator('body').innerText()
+      if (/application error|internal server error/i.test(body)) {
+        throw new Error('Reviewer mutation returned an application error')
+      }
       await shot('review-queue')
-      return 'review queue reachable'
+      return 'review queue reached and available exception was resolved/published'
     },
   },
 
@@ -212,8 +249,94 @@ export const flows = [
         throw new Error('Verification page requires a session — it must be public')
       }
 
+      await page.getByRole('heading', { name: /verify a document/i }).waitFor()
       await shot('verify')
       return 'public and reachable'
+    },
+  },
+
+  {
+    id: 'verify-reject',
+    name: 'Public verification — unknown document shows rejection',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/verify/00000000-0000-0000-0000-000000000000`)
+      await page.getByText(/document not verified/i).waitFor({ timeout: 10_000 })
+      await shot('verify-rejected')
+      return 'unknown document rejected'
+    },
+  },
+
+  {
+    id: 'doc-issuance-harness',
+    name: 'Doc issuance harness — PDF generates with hash',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/doc-issuance`)
+      await page.getByText(/control number/i).first().waitFor({ timeout: 15_000 })
+      await page.getByText(/sha-256/i).first().waitFor()
+      const body = await page.locator('body').innerText()
+      if (body.toLowerCase().includes('error') && body.includes('danger')) {
+        throw new Error('Harness page shows an error state')
+      }
+      await shot('doc-issuance')
+      return 'PDF hash rendered'
+    },
+  },
+
+  {
+    id: 'egov-chain-harness',
+    name: 'eGOV chain harness — anchor and verify round-trip',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/egov-chain`)
+      await page.getByText(/transaction hash/i).waitFor({ timeout: 15_000 })
+      const body = await page.locator('body').innerText()
+      if (!body.includes('Hash matches') && !body.includes('local fallback')) {
+        throw new Error('Expected anchor/verify result on harness page')
+      }
+      await shot('egov-chain')
+      return body.includes('Hash matches') ? 'hash matches' : 'local fallback (mock mode)'
+    },
+  },
+
+  {
+    id: 'verify-qr-harness',
+    name: 'Verify QR harness — links to live verify routes',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/implementation/verify-qr`)
+      await page.getByRole('heading', { name: /public qr verification/i }).waitFor()
+      await page.getByRole('link', { name: /open/i }).first().waitFor()
+      await shot('verify-qr-harness')
+      return 'harness documents verify flow'
+    },
+  },
+
+  {
+    id: 'verify-upload',
+    name: 'Verify upload — PDF hash computed in browser',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/verify`)
+      await page.getByText(/upload pdf/i).waitFor()
+
+      // Minimal valid PDF bytes — enough for SHA-256 in the browser.
+      const pdfBytes = Buffer.from(
+        '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n' +
+          '2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\n' +
+          'xref\n0 3\n0000000000 65535 f \ntrailer<</Root 1 0 R/Size 3>>\nstartxref\n%%EOF',
+      )
+      const fileInput = page.locator('input[type="file"]').first()
+      await fileInput.setInputFiles({
+        name: 'test-doc.pdf',
+        mimeType: 'application/pdf',
+        buffer: pdfBytes,
+      })
+
+      await page.getByText(/sha-256 of uploaded file/i).waitFor({ timeout: 10_000 })
+      await shot('verify-upload-hash')
+      return 'browser hash computed'
     },
   },
 

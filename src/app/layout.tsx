@@ -64,12 +64,12 @@ export default async function RootLayout({
                     <span className="text-muted">{session.name}</span>
                     <Badge tone="brand">{session.role}</Badge>
                   </span>
-                  <Link
+                  <a
                     href="/api/auth/egov/logout"
                     className="rounded-lg px-3 py-1.5 text-muted hover:bg-background"
                   >
                     Sign out
-                  </Link>
+                  </a>
                 </>
               ) : (
                 <Link

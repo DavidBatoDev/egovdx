@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { exchangeCode } from '@/lib/egov/sso'
 import { supabaseAdmin } from '@/lib/supabase/server'
-import { setSession, type SessionRole } from '@/lib/auth/session'
+import {
+  createSessionCookie,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  type Session,
+  type SessionRole,
+} from '@/lib/auth/session'
 import { decodeState, safeNext } from '@/lib/auth/state'
 
 export const runtime = 'nodejs'
@@ -47,18 +53,24 @@ export async function GET(req: NextRequest) {
 
   const role: SessionRole = (officer?.role as SessionRole) ?? 'citizen'
 
-  await setSession({
+  const session: Session = {
     sub: profile.sub,
     name: officer?.full_name ?? profile.fullName,
     role,
     lguId: officer?.lgu_id ?? null,
     mobile: profile.mobile,
-  })
+  }
 
   // Logged so that after a first real SSO login you can copy the subject into
   // the officers table:  update officers set egov_sub = '<sub>' where ...
   console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role}`)
 
   const fallback = role === 'officer' ? '/console' : role === 'reviewer' ? '/review' : '/'
-  return NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))
+  const response = NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))
+  response.cookies.set(
+    SESSION_COOKIE,
+    await createSessionCookie(session),
+    sessionCookieOptions(),
+  )
+  return response
 }

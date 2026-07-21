@@ -8,17 +8,22 @@
     "start": "next start",
     "lint": "eslint",
     "qa": "node scripts/qa/run.mjs",
-    "qa:headless": "node scripts/qa/run.mjs --headless --slowmo 0"
+    "qa:headless": "node scripts/qa/run.mjs --headless --slowmo 0",
+    "test:earl": "tsx scripts/test/earl.test.ts",
+    "qa:earl": "node scripts/qa/run.mjs --headless --slowmo 0 verify verify-reject doc-issuance-harness egov-chain-harness verify-qr-harness verify-upload"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
     "jose": "^6.2.3",
     "next": "16.2.10",
+    "openai": "^6.48.0",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "viem": "^2.55.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
