@@ -25,8 +25,15 @@ approval claims, resumable issuance state, notification provenance, and an
 LGU/year control-number sequence. Local and production headed journeys pass in
 mock mode. Controlled live eGovPay/eMessage proof remains intentionally gated.
 
-The citizen boundary starts from an existing identity-verified request. Jasmin's
-`/apply` and `/track` routes remain outside Elton's owned implementation.
+Remaining required work is certification only: run eGovPay with the issued
+`test_` token and run eMessage only against an approved
+`EGOV_EMESSAGE_TEST_NUMBER`. Switch the two production modes independently
+after their checks pass; never send money or a message to a real citizen during
+QA. There is no remaining Elton-owned application feature to build.
+
+Jasmin's `/apply` and `/track` routes now consume Elton's payment and approval
+contracts end to end. They remain outside Elton's ownership, but the integration
+boundary is complete.
 
 ---
 

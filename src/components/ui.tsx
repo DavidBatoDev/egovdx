@@ -188,7 +188,7 @@ export function Badge({
  * color.
  */
 export function SourceBadge({ source }: { source: 'live' | 'mock' | 'fallback' }) {
-  if (source === 'live') return null
+  if (source === 'live') return <Badge tone="brand">Live API</Badge>
   if (source === 'fallback') return <Badge tone="warn">Offline — using cached data</Badge>
   return <Badge tone="warn">Mock data — demo only</Badge>
 }
@@ -307,4 +307,31 @@ export function Th({ children, className }: { children: ReactNode; className?: s
 
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
   return <td className={cn('px-3 py-2 text-sm text-foreground', className)}>{children}</td>
+}
+
+// ------------------------------------------------------- citizen primitives
+
+export function Tabs({ items, active }: { items: { href: string; label: string }[]; active: string }) {
+  return <nav aria-label="Citizen sections" className="flex gap-1 overflow-x-auto border-b border-border">{items.map((item) => <Link key={item.href} href={item.href} aria-current={active === item.href ? 'page' : undefined} className={cn('whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold', active === item.href ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-brand')}>{item.label}</Link>)}</nav>
+}
+
+export function Stepper({ steps, current }: { steps: string[]; current: number }) {
+  return <ol aria-label="Application progress" className="grid gap-2 sm:grid-cols-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? 'step' : undefined} className={cn('rounded-sm border px-3 py-2 text-xs font-bold', index < current ? 'border-brand bg-brand-soft text-brand' : index === current ? 'border-brand bg-brand text-white' : 'border-border text-muted')}><span className="mr-1">{index + 1}.</span>{step}</li>)}</ol>
+}
+
+export function FileUpload(props: ComponentProps<'input'>) {
+  return <input {...props} type="file" className={cn(inputClass, 'file:mr-3 file:rounded-sm file:border-0 file:bg-brand-soft file:px-3 file:py-1 file:font-bold file:text-brand', props.className)} />
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return <div aria-hidden="true" className={cn('animate-pulse rounded-sm bg-brand-soft', className)} />
+}
+
+export function Toast({ tone = 'brand', children }: { tone?: Tone; children: ReactNode }) {
+  return <div role="status" className={cn('rounded-sm border px-4 py-3 text-sm', TONE_STYLES[tone])}>{children}</div>
+}
+
+export function Modal({ open, title, children, footer }: { open: boolean; title: string; children: ReactNode; footer?: ReactNode }) {
+  if (!open) return null
+  return <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4"><Card className="w-full max-w-lg"><CardHeader title={title} /><CardBody className="space-y-4">{children}{footer ? <div className="flex justify-end gap-2 border-t border-border pt-3">{footer}</div> : null}</CardBody></Card></div>
 }

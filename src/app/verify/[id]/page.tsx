@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import Link from 'next/link'
 import { getRequest, getRequestByHash } from '@/lib/data'
 import { verifyAnchor } from '@/lib/egov/chain'
 import { dateOnly, shortHash } from '@/lib/format'
@@ -7,7 +7,6 @@ import {
   Card,
   CardBody,
   CardHeader,
-  PageHeader,
   SourceBadge,
   StatusBadge,
 } from '@/components/ui'
@@ -46,9 +45,9 @@ export default async function VerifyPage({ params }: Props) {
           This document may have been tampered with, or the link is invalid.
         </p>
         <div className="mt-8">
-          <a href="/verify" className="text-sm text-brand underline">
+          <Link href="/verify" className="text-sm text-brand underline">
             Try verifying another document
-          </a>
+          </Link>
         </div>
       </main>
     )
@@ -160,6 +159,9 @@ export default async function VerifyPage({ params }: Props) {
           {chainResult?.data.blockNumber != null && (
             <Row label="Block Number" value={String(chainResult.data.blockNumber)} mono />
           )}
+          {(chainResult?.data.blockTimestamp ?? request.chain_anchored_at) && (
+            <Row label="Anchored At" value={new Date(chainResult?.data.blockTimestamp ?? request.chain_anchored_at!).toLocaleString('en-PH')} />
+          )}
         </CardBody>
       </Card>
 
@@ -178,9 +180,9 @@ export default async function VerifyPage({ params }: Props) {
       <p className="text-center text-xs text-muted">
         Verified by{' '}
         <span className="font-semibold text-brand">eSee LGU</span> powered by eGovPH ·{' '}
-        <a href="/verify" className="underline">
+        <Link href="/verify" className="underline">
           Verify another document
-        </a>
+        </Link>
       </p>
     </main>
   )

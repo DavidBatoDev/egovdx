@@ -38,8 +38,11 @@ configured. No external transaction or SMS was created during automated QA.
 Switch each integration independently only for the controlled live proof; never
 send a QA notification to a citizen's production number.
 
+These two controlled proofs are Elton's only remaining required tasks. All
+owned application routes and persistence work are complete.
+
 ## Integration boundary
 
-Jasmin's eGovPH shell, `/apply`, and `/track` remain separate work. Elton starts
-from an existing identity-verified request and exposes the payment and officer
-contracts those citizen routes will call.
+Jasmin's eGovPH shell, `/apply`, and `/track` now call Elton's payment and
+officer contracts end to end. Ownership remains separate; integration no longer
+blocks either member.

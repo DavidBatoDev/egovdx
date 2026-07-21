@@ -1,49 +1,28 @@
 import 'server-only'
 import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 
-/**
- * eGOV PH — Single sign-on.
- *
- * The documented SSO contract starts after an upstream eGovPH handoff has
- * issued an exchange code. This app does not own or guess that browser flow:
- * it exchanges the short-lived code server-side, then resolves the profile.
- */
-
 export type EgovProfile = {
   sub: string
   fullName: string
-  firstName: string | null
-  middleName: string | null
-  lastName: string | null
-  suffix: string | null
-  birthdate: string | null
+  firstName: string
+  middleName: string
+  lastName: string
+  suffix: string
+  birthDate: string
+  address: string
   email: string | null
   mobile: string | null
   raw: Record<string, unknown>
 }
 
-type SsoTokenResponse = {
-  access_token?: unknown
-}
-
-function partnerCredentials(): { partnerCode: string; partnerSecret: string } {
-  const partnerCode = process.env.EGOV_SSO_PARTNER_CODE
-  const partnerSecret = process.env.EGOV_SSO_PARTNER_SECRET
-
-  if (!partnerCode || !partnerSecret) {
-    throw new Error('EGOV_SSO_PARTNER_CODE and EGOV_SSO_PARTNER_SECRET must be set')
-  }
-
-  return { partnerCode, partnerSecret }
-}
-
-/** Exchange an upstream eGovPH code and resolve its authenticated profile. */
 export async function exchangeCode(code: string): Promise<EgovResult<EgovProfile>> {
   return callEgov(
     'SSO',
     async () => {
-      const { partnerCode, partnerSecret } = partnerCredentials()
-      const tokenResponse = await egovFetch<SsoTokenResponse>('SSO', '/api/token', {
+      const partnerCode = process.env.EGOV_SSO_PARTNER_CODE
+      const partnerSecret = process.env.EGOV_SSO_PARTNER_SECRET
+      if (!partnerCode || !partnerSecret) throw new Error('SSO partner credentials are not set')
+      const token = await egovFetch<{ access_token?: string }>('SSO', '/api/token', {
         method: 'POST',
         body: JSON.stringify({
           exchange_code: code,
@@ -52,118 +31,59 @@ export async function exchangeCode(code: string): Promise<EgovResult<EgovProfile
           partner_secret: partnerSecret,
         }),
       })
-
-      if (typeof tokenResponse.access_token !== 'string' || !tokenResponse.access_token) {
-        throw new Error('eGovPH /api/token returned no access token')
-      }
-
-      const raw = await egovFetch<Record<string, unknown>>(
-        'SSO',
-        '/api/partner/sso_authentication',
-        {
-          method: 'POST',
-          headers: authHeaders('SSO', tokenResponse.access_token),
-        },
-      )
-
+      if (!token.access_token) throw new Error('eGovPH /api/token returned no access token')
+      const raw = await egovFetch<Record<string, unknown>>('SSO', '/api/partner/sso_authentication', {
+        method: 'POST',
+        headers: authHeaders('SSO', token.access_token),
+      })
       return normalizeProfile(raw)
     },
     () => mockProfile(code),
   )
 }
 
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
 function normalizeProfile(raw: Record<string, unknown>): EgovProfile {
-  const profile = raw.data
-  if (!isRecord(profile)) {
-    throw new Error('eGovPH SSO response contained no profile data')
-  }
-
-  if (typeof profile.uniqid !== 'string' || !profile.uniqid) {
-    throw new Error('eGovPH SSO response contained no uniqid')
-  }
-
-  const fullName = [
-    profile.first_name,
-    profile.middle_name,
-    profile.last_name,
-    profile.suffix,
-  ]
-    .filter(isNonEmptyString)
-    .join(' ')
-
-  const firstName = stringOrNull(profile.first_name)
-  const lastName = stringOrNull(profile.last_name)
-  const birthdate = stringOrNull(profile.birth_date)
-
+  const p = record(raw.data)
+  const sub = text(p.uniqid)
+  if (!sub) throw new Error('eGovPH SSO response contained no data.uniqid')
+  const firstName = text(p.first_name)
+  const middleName = text(p.middle_name)
+  const lastName = text(p.last_name)
+  const suffix = text(p.suffix)
   return {
-    sub: profile.uniqid,
-    fullName: fullName || 'eGovPH User',
+    sub,
+    fullName: [firstName, middleName, lastName, suffix].filter(Boolean).join(' ') || 'eGovPH User',
     firstName,
-    middleName: stringOrNull(profile.middle_name),
+    middleName,
     lastName,
-    suffix: stringOrNull(profile.suffix),
-    birthdate,
-    email: stringOrNull(profile.email),
-    mobile: stringOrNull(profile.mobile),
+    suffix,
+    birthDate: text(p.birth_date),
+    address: text(p.address),
+    email: text(p.email) || null,
+    mobile: text(p.mobile) || null,
     raw,
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
-}
-
-/**
- * Deterministic per code, so signing in twice as the same demo persona lands on
- * the same `officers` row instead of creating a new identity each time.
- */
 function mockProfile(code: string): EgovProfile {
-  const personas: Record<string, EgovProfile> = {
-    officer: {
-      sub: 'demo-officer-sub',
-      fullName: 'Maria Santos',
-      firstName: 'Maria',
-      middleName: null,
-      lastName: 'Santos',
-      suffix: null,
-      birthdate: '1985-04-12',
-      email: 'maria.santos@plainview.gov.ph',
-      mobile: '+639171234567',
-      raw: { persona: 'officer' },
-    },
-    reviewer: {
-      sub: 'demo-reviewer-sub',
-      fullName: 'Jose Reyes',
-      firstName: 'Jose',
-      middleName: null,
-      lastName: 'Reyes',
-      suffix: null,
-      birthdate: '1981-08-21',
-      email: 'jose.reyes@dict.gov.ph',
-      mobile: '+639179876543',
-      raw: { persona: 'reviewer' },
-    },
-    citizen: {
-      sub: 'demo-citizen-sub',
-      fullName: 'Juana Dela Cruz',
-      firstName: 'Juana',
-      middleName: 'Dela',
-      lastName: 'Cruz',
-      suffix: null,
-      birthdate: '1992-03-14',
-      email: 'juana.delacruz@example.ph',
-      mobile: '+639175551234',
-      raw: { persona: 'citizen' },
-    },
+  const base = {
+    firstName: 'Juana', middleName: 'Santos', lastName: 'Dela Cruz', suffix: '',
+    birthDate: '1992-03-14', address: '24 Sampaguita St., Barangay Plainview, Mandaluyong City, NCR',
   }
-
+  const personas: Record<string, EgovProfile> = {
+    officer: { ...base, sub: 'demo-officer-sub', fullName: 'Maria Santos', firstName: 'Maria', middleName: '', lastName: 'Santos', email: 'maria.santos@plainview.gov.ph', mobile: '+639171234567', raw: { persona: 'officer' } },
+    reviewer: { ...base, sub: 'demo-reviewer-sub', fullName: 'Jose Reyes', firstName: 'Jose', middleName: '', lastName: 'Reyes', email: 'jose.reyes@dict.gov.ph', mobile: '+639179876543', raw: { persona: 'reviewer' } },
+    citizen: { ...base, sub: 'demo-citizen-sub', fullName: 'Juana Santos Dela Cruz', email: 'juana.delacruz@example.ph', mobile: '+639175551234', raw: { persona: 'citizen' } },
+  }
   return personas[code] ?? personas.citizen
 }

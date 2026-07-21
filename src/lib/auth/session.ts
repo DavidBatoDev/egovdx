@@ -30,6 +30,9 @@ export type Session = {
   /** Set for officers; null for citizens and DICT reviewers. */
   lguId: string | null
   mobile: string | null
+  /** Compatibility alias used by the resumable citizen application flow. */
+  birthDate?: string
+  address: string | null
   /** Source of the SSO profile used to establish this session. */
   ssoSource: EgovSource | null
 }
@@ -79,10 +82,12 @@ export async function getSession(): Promise<Session | null> {
       middleName: stringOrNull(payload.middleName),
       lastName: stringOrNull(payload.lastName),
       suffix: stringOrNull(payload.suffix),
-      birthdate: stringOrNull(payload.birthdate),
+      birthdate: stringOrNull(payload.birthdate ?? payload.birthDate),
       role: (payload.role as SessionRole) ?? 'citizen',
       lguId: (payload.lguId as string | null) ?? null,
       mobile: (payload.mobile as string | null) ?? null,
+      birthDate: stringOrNull(payload.birthDate ?? payload.birthdate) ?? undefined,
+      address: stringOrNull(payload.address),
       ssoSource: isEgovSource(payload.ssoSource) ? payload.ssoSource : null,
     }
   } catch {

@@ -11,7 +11,9 @@
     "qa:headless": "node scripts/qa/run.mjs --headless --slowmo 0",
     "test:earl": "tsx scripts/test/earl.test.ts",
     "test:elton": "tsx scripts/test/elton.test.ts",
+    "test:jasmin": "tsx scripts/test/jasmin.test.ts",
     "test:elton:unit": "node --conditions react-server --import tsx --test src/lib/egov/elton.test.ts",
+    "probe:chain:live": "node --conditions react-server --import tsx scripts/probe-chain-live.ts",
     "qa:earl": "node scripts/qa/run.mjs --headless --slowmo 0 verify verify-reject doc-issuance-harness egov-chain-harness verify-qr-harness verify-upload"
   },
   "dependencies": {

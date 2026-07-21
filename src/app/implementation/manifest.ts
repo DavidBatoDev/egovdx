@@ -52,7 +52,7 @@ export const FEATURES: Feature[] = [
     slug: 'brandkit',
     name: 'Brand kit & UI primitives',
     owner: 'Jasmin',
-    status: 'building',
+    status: 'unified',
     summary:
       'Design tokens, UI primitives, and the LGU letterhead/seal assets every issued document uses.',
     dependsOn: [],
@@ -76,7 +76,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-shell',
     name: 'Mock eGovPH app shell',
     owner: 'Jasmin',
-    status: 'todo',
+    status: 'unified',
     summary:
       'The eGovPH super-app wrapper a citizen sees: dashboard, LGUs tab, LGU search, and the live service list per LGU.',
     dependsOn: ['brandkit'],
@@ -89,7 +89,7 @@ export const FEATURES: Feature[] = [
     slug: 'citizen-apply',
     name: 'Citizen request flow UI',
     owner: 'Jasmin',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Dynamic form rendered from lgu_services.form_fields, with eVerify prefill, document upload, and submission.',
     dependsOn: ['egov-shell', 'everify', 'egov-pay'],
@@ -167,7 +167,7 @@ export const FEATURES: Feature[] = [
     slug: 'validation-rules',
     name: 'Bounded validation & flagging',
     owner: 'David',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Checks a generated config against its DICT template. Conforming services publish fast; anomalies route to a human.',
     dependsOn: [],
@@ -180,7 +180,7 @@ export const FEATURES: Feature[] = [
     slug: 'doc-extract',
     name: 'Paper form extraction',
     owner: 'David',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Upload an existing paper form as an alternative to prompting. Extractor returns HTML, which we parse into fields.',
     dependsOn: ['ai-studio'],
@@ -208,7 +208,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-chain',
     name: 'Blockchain anchoring',
     owner: 'Earl',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Anchors each issued PDF hash on-chain so a bank or employer can confirm authenticity without calling the barangay.',
     dependsOn: ['doc-issuance'],
