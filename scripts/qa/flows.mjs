@@ -149,6 +149,21 @@ export const flows = [
   },
 
   {
+    id: 'lgu-onboarding',
+    name: 'LGU onboarding — officer can open PSA-backed registration',
+    owner: 'Elton',
+    async run({ page, baseUrl, shot }) {
+      await page.goto(`${baseUrl}/api/auth/egov/login?persona=officer`)
+      await visit(page, `${baseUrl}/console/register`)
+      await page.getByRole('heading', { name: /register an lgu/i }).waitFor({ timeout: 10_000 })
+      await page.getByPlaceholder('e.g. Marilao').fill('Marilao')
+      await page.getByRole('button', { name: /^search$/i }).click()
+      await shot('lgu-registration-search')
+      return 'registration route and PSA search reachable'
+    },
+  },
+
+  {
     id: 'studio',
     name: 'AI Studio — prompt box accepts an unrehearsed service description',
     owner: 'David',
