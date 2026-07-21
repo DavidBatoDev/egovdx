@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
-import { Badge } from '@/components/ui'
+import { Badge, SourceBadge } from '@/components/ui'
 
 export const metadata: Metadata = {
   title: 'eSee LGU — Configuration layer for eLGU',
@@ -71,6 +71,7 @@ export default async function RootLayout({
                   <span className="hidden items-center gap-2 px-2 sm:flex">
                     <span className="text-white/70">{session.name}</span>
                     <Badge tone="accent">{session.role}</Badge>
+                    {session.ssoSource ? <SourceBadge source={session.ssoSource} /> : null}
                   </span>
                   <a
                     href="/api/auth/egov/logout"

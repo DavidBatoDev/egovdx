@@ -123,8 +123,8 @@ export const flows = [
     async run({ page, baseUrl, shot }) {
       // The login route redirects, so check where we ended up AND that the
       // destination actually rendered — a redirect into a 404 is not a pass.
-      const res = await page.goto(`${baseUrl}/api/auth/egov/login?persona=officer`, {
-        waitUntil: 'domcontentloaded',
+      await visit(page, `${baseUrl}/api/auth/egov/login?persona=officer`, {
+        path: '/api/auth/egov/login',
       })
 
       const url = page.url()
@@ -135,9 +135,7 @@ export const flows = [
         throw new Error(`Officer landed on ${url}, expected /console`)
       }
 
-      const status = res?.status() ?? 0
-      if (status === 404) throw new NotBuiltError('/console', status)
-      if (status >= 400) throw new Error(`/console returned HTTP ${status}`)
+      await visit(page, url, { path: '/console' })
 
       await shot('officer-signed-in')
       return 'routed to /console'
@@ -149,14 +147,43 @@ export const flows = [
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
     async run({ page, baseUrl }) {
-      await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
-        waitUntil: 'domcontentloaded',
+      await visit(page, `${baseUrl}/api/auth/egov/login?persona=citizen`, {
+        path: '/api/auth/egov/login',
       })
       const url = page.url()
       if (url.includes('error=')) {
         throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
       }
-      return 'session established'
+      if (new URL(url).pathname !== '/') {
+        throw new Error(`Citizen landed on ${url}, expected /`)
+      }
+
+      await visit(page, url, { path: '/' })
+      await page.getByText('Mock data', { exact: true }).waitFor({ timeout: 10_000 })
+      return 'routed to /'
+    },
+  },
+
+  {
+    id: 'sso-reviewer',
+    name: 'SSO — reviewer signs in and is routed to the review queue',
+    owner: 'Joshua',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/api/auth/egov/login?persona=reviewer`, {
+        path: '/api/auth/egov/login',
+      })
+
+      const url = page.url()
+      if (url.includes('error=')) {
+        throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
+      }
+      if (!url.includes('/review')) {
+        throw new Error(`Reviewer landed on ${url}, expected /review`)
+      }
+
+      await visit(page, url, { path: '/review' })
+      await shot('reviewer-signed-in')
+      return 'routed to /review'
     },
   },
 

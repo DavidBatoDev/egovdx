@@ -223,17 +223,17 @@ apply form until `VerifiedIdentity` is fixed.
 
 ### 1. Simplified SSO authentication
 
-- [ ] Remove `buildAuthorizeUrl` and all browser-widget/client-ID assumptions;
+- [x] Remove `buildAuthorizeUrl` and all browser-widget/client-ID assumptions;
   no guessed live authorization URL remains.
-- [ ] Accept the upstream `exchange_code` only in a server-controlled handoff
+- [x] Accept the upstream `exchange_code` only in a server-controlled handoff
   and exchange it immediately.
-- [ ] `POST /api/token` sends `exchange_code`, `scope: "SSO_AUTHENTICATION"`,
+- [x] `POST /api/token` sends `exchange_code`, `scope: "SSO_AUTHENTICATION"`,
   `partner_code`, and `partner_secret`.
-- [ ] `POST /api/partner/sso_authentication` sends only the resulting bearer
+- [x] `POST /api/partner/sso_authentication` sends only the resulting bearer
   token and no request body.
-- [ ] Normalize `data.uniqid`, documented profile fields, and the raw payload;
+- [x] Normalize `data.uniqid`, documented profile fields, and the raw payload;
   retain the existing officer lookup and local role/session behavior.
-- [ ] Confirm officer, reviewer, and citizen mock personas still sign in.
+- [x] Confirm officer, reviewer, and citizen mock personas still sign in.
 
 ### 2. Face liveness
 
