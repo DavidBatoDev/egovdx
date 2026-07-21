@@ -31,8 +31,22 @@ export default async function SignInPage({
 
       {error ? (
         <Card className="border-danger/30 bg-danger-soft">
-          <CardBody className="text-sm text-danger">
-            Sign-in failed ({error}). Please try again.
+          <CardBody className="space-y-2 text-sm text-danger">
+            {error === 'database_unavailable' ? (
+              <>
+                <p className="font-medium">Can&apos;t reach the database.</p>
+                <p>
+                  Roles are stored in Supabase, so sign-in can&apos;t complete without it.
+                  Fill the three Supabase values into{' '}
+                  <code className="font-mono">.env.local</code>, run{' '}
+                  <code className="font-mono">supabase/schema.sql</code> and{' '}
+                  <code className="font-mono">supabase/seed.sql</code>, then restart the
+                  dev server.
+                </p>
+              </>
+            ) : (
+              <p>Sign-in failed ({error}). Please try again.</p>
+            )}
           </CardBody>
         </Card>
       ) : null}

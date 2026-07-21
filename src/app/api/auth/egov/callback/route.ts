@@ -24,11 +24,26 @@ export async function GET(req: NextRequest) {
 
   const { data: profile, source } = await exchangeCode(code)
 
-  const { data: officer } = await supabaseAdmin()
-    .from('officers')
-    .select('role, lgu_id, full_name')
-    .eq('egov_sub', profile.sub)
-    .maybeSingle()
+  // Roles come from the database, so an unreachable database means we cannot
+  // say what this person is allowed to do. Failing closed with a clear message
+  // beats defaulting to 'citizen' — a silent role downgrade looks like a
+  // permissions bug and sends someone hunting in the wrong place.
+  let officer: { role: string; lgu_id: string | null; full_name: string } | null
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from('officers')
+      .select('role, lgu_id, full_name')
+      .eq('egov_sub', profile.sub)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+    officer = data
+  } catch (err) {
+    console.error('[sso] officer lookup failed:', err)
+    return NextResponse.redirect(
+      new URL('/signin?error=database_unavailable', req.nextUrl.origin),
+    )
+  }
 
   const role: SessionRole = (officer?.role as SessionRole) ?? 'citizen'
 

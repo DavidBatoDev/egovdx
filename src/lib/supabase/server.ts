@@ -16,7 +16,8 @@ export function supabaseAdmin() {
   if (!url || !key) {
     throw new Error(
       'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. ' +
-        'Copy .env.local.template to .env.local and fill it in.',
+        'Fill them into .env.local from Supabase → Project Settings → API, ' +
+        'then restart the dev server.',
     )
   }
 
