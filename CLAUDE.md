@@ -7,10 +7,41 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # eGovDX Local
 
 A bounded configuration layer over a fixed, DICT-approved eService flow:
-`Request → Verification → Approval → Fee assessment → Issuance`. LGUs configure
-fees, waivers, eligibility, and form fields within approved bounds; they do not
-author workflows. Built for the eGovPH hackathon — see `docs/` for the brief,
-the rules, and the API catalog.
+`Request → Verification → Approval → Fee assessment → Issuance`. An LGU officer
+describes a service in plain language; the system generates it, validates it
+against DICT-approved bounds, and publishes it natively inside eGovPH. Citizens
+then request it with their identity pulled from PhilSys rather than retyped, and
+approved documents are issued as PDFs whose hash is anchored on-chain so anyone
+can verify them.
+
+LGUs configure fees, waivers, eligibility, and form fields **within approved
+bounds** — they do not author workflows. That boundary is the whole pitch: we
+remove the configuration labour, not the government oversight.
+
+## Read `docs/` before you build
+
+**`docs/` is the source of truth for what this app is and why.** Do not infer
+the product from the code — the code is half-built and the intent lives in these
+files. Read the ones relevant to your task before writing anything.
+
+| Doc | What it answers |
+|---|---|
+| `docs/03_egovdx_brief.md` | **What we're building and why.** The problem, the product, the positioning, and the risks we state before a judge finds them. Start here. |
+| `docs/06_demo_script.md` | **What the finished app must do**, minute by minute. The clearest spec of the intended end state. |
+| `docs/API_Reference.md` | **Authoritative contracts for every eGovPH API** — routes, auth schemes, request/response shapes. Supersedes the catalog and anything inferred in code. |
+| `docs/05_task_distribution.md` | Who owns what, the timeline, and the dependency graph. |
+| `docs/<name>/README.md` | Per-developer briefs (`david`, `joshua`, `jasmin`, `earl`, `elton`) with exact contracts to freeze. |
+| `docs/04_implementation_workflow.md` | How five people build in parallel without colliding. |
+| `docs/01_hackathon_overview.md` | Deadlines, judging weights, submission rules. |
+| `docs/draft-flow.md` | The original hand-written flow sketch that `06_demo_script.md` expands. |
+
+`API_Reference.md` already folds in the old high-level catalog, so it is the only
+API document you need. If you find an older catalog file lying around, it is
+superseded.
+
+Judging weights shape priorities: impact 35%, integration depth 30%,
+presentation 15%, UI/UX 10%, reels 10%. Visible, load-bearing API calls are
+worth roughly three times pixel polish.
 
 ## Build and verify
 
@@ -79,10 +110,10 @@ Task distribution and per-developer assignments: `docs/05_task_distribution.md`.
 Demo script: `docs/06_demo_script.md`.
 
 **`docs/API_Reference.md` is the authority on every eGovPH contract.** It
-supersedes the catalog in `docs/api_catalog_documentation_v2.md` and any shape
-inferred in code. Check it before touching an adapter — several services use
-custom auth headers rather than bearer tokens, and `authHeaders()` in
-`src/lib/egov/client.ts` already encodes which is which.
+supersedes the older high-level catalog and any shape inferred in code, several
+of which turned out to be wrong. Check it before touching an adapter — several
+services use custom auth headers rather than bearer tokens, and `authHeaders()`
+in `src/lib/egov/client.ts` already encodes which is which.
 
 ## Working on a feature
 
