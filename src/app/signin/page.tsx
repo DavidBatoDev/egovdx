@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Badge, ButtonAnchor, Card, CardBody } from '@/components/ui'
 import { egovMode } from '@/lib/egov/client'
 
@@ -22,95 +23,114 @@ export default async function SignInPage({
     `/api/auth/egov/login?persona=${persona}&next=${encodeURIComponent(next || fallback || '')}`
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-6xl space-y-5">
       {error ? <SignInError error={error} /> : null}
 
-      <div className="overflow-hidden rounded-[1.5rem] border border-border bg-surface">
-        <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-          <section className="relative order-2 overflow-hidden bg-brand px-6 py-8 text-white sm:px-10 sm:py-10 lg:order-1">
+      <div className="overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-[0_20px_60px_rgba(0,50,160,0.08)]">
+        <div className="grid lg:grid-cols-[1.45fr_0.85fr]">
+          <section className="relative overflow-hidden bg-brand-soft px-6 py-8 sm:px-10 sm:py-10">
             <div
               aria-hidden="true"
-              className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[44px] border-white/5"
+              className="absolute -left-24 -top-24 h-72 w-72 rounded-full border-[52px] border-white/50"
             />
             <div
               aria-hidden="true"
-              className="absolute -bottom-28 -left-24 h-72 w-72 rounded-full border-[52px] border-white/5"
+              className="absolute -bottom-32 right-10 h-80 w-80 rounded-full border-[58px] border-white/40"
             />
 
-            <div className="relative mx-auto max-w-md lg:mx-0">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-white/75">
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-sm text-brand">
-                  e
-                </span>
-                eGovPH local services
+            <div className="relative grid items-center gap-8 sm:grid-cols-[1fr_15rem]">
+              <div className="max-w-md">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-brand">
+                  <CitizenIcon />
+                  Citizen access
+                </div>
+                <h1 className="mt-5 font-display text-3xl leading-tight text-foreground sm:text-4xl">
+                  Explore your LGU services
+                </h1>
+                <p className="mt-4 text-sm leading-6 text-muted">
+                  Find services from your city, municipality, or barangay. Use
+                  your verified eGovPH identity to request documents without
+                  re-entering information the government already has.
+                </p>
+
+                <ButtonAnchor
+                  href={q('citizen', '/citizen/services')}
+                  className="mt-7 h-12 w-full rounded-full text-base sm:w-auto sm:min-w-64"
+                >
+                  <LocationIcon />
+                  Browse my LGU
+                  <ArrowIcon />
+                </ButtonAnchor>
+                <p className="mt-3 text-xs text-muted">
+                  Secure sign-in with your eGovPH account
+                </p>
               </div>
-              <h1 className="mt-6 font-display text-3xl leading-tight sm:text-4xl">
-                Your LGU services,
-                <br />
-                right where you are.
-              </h1>
-              <p className="mt-4 max-w-sm text-sm leading-6 text-white/75">
-                Find your city, municipality, or barangay and request official
-                documents using your verified eGovPH identity.
-              </p>
 
-              <PhonePreview />
+              <div className="mx-auto w-full max-w-[15rem] rounded-[2rem] border-[6px] border-white bg-white p-1.5 shadow-[0_24px_55px_rgba(19,51,109,0.22)]">
+                <Image
+                  src="/brand/egovph-local-government.png"
+                  alt="eGovPH mobile app showing local government portals and My LGU services"
+                  width={480}
+                  height={1056}
+                  priority
+                  className="h-auto w-full rounded-[1.35rem]"
+                />
+              </div>
             </div>
           </section>
 
-          <section className="order-1 flex flex-col justify-center px-6 py-8 sm:px-10 sm:py-10 lg:order-2">
+          <section className="flex flex-col justify-center border-t border-border px-6 py-8 sm:px-10 sm:py-10 lg:border-l lg:border-t-0">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">
-              Citizen access
+              Government access
             </p>
             <h2 className="mt-2 font-display text-3xl leading-tight text-foreground">
-              Start with your local government
+              Serve your community
             </h2>
             <p className="mt-3 text-sm leading-6 text-muted">
-              Sign in once with eGovPH. Your verified profile follows you, so
-              you can spend less time filling forms and more time getting things
-              done.
+              Access is limited to roles assigned by DICT. Use the same eGovPH
+              account to configure services or review exceptions.
             </p>
 
-            <ButtonAnchor
-              href={q('citizen', '/citizen/services')}
-              className="mt-7 h-12 w-full rounded-full text-base"
-            >
-              <LocationIcon />
-              Browse my LGU
-              <ArrowIcon />
-            </ButtonAnchor>
-            <p className="mt-3 text-center text-xs text-muted">
-              Secure sign-in powered by your eGovPH account
-            </p>
+            <div className="mt-7 space-y-4">
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <ButtonAnchor
+                  href={q('officer', '/console')}
+                  className="h-12 w-full justify-start rounded-lg text-base"
+                >
+                  <OfficeIcon />
+                  LGU officer
+                  <ArrowIcon />
+                </ButtonAnchor>
+                <p className="px-2 pb-1 pt-3 text-xs leading-5 text-muted">
+                  Configure and publish bounded local eServices, then process
+                  citizen requests.
+                </p>
+              </div>
 
-            <div className="my-7 flex items-center gap-3" aria-hidden="true">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-muted">
-                Government access
-              </span>
-              <span className="h-px flex-1 bg-border" />
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <ButtonAnchor
+                  href={q('reviewer', '/review')}
+                  variant="secondary"
+                  className="h-12 w-full justify-start rounded-lg text-base"
+                >
+                  <ReviewIcon />
+                  DICT reviewer
+                  <ArrowIcon />
+                </ButtonAnchor>
+                <p className="px-2 pb-1 pt-3 text-xs leading-5 text-muted">
+                  Review configurations that fall outside automated approval
+                  bounds.
+                </p>
+              </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <ButtonAnchor
-                href={q('officer', '/console')}
-                variant="secondary"
-                className="h-11"
-              >
-                LGU officer
-              </ButtonAnchor>
-              <ButtonAnchor
-                href={q('reviewer', '/review')}
-                variant="secondary"
-                className="h-11"
-              >
-                DICT reviewer
-              </ButtonAnchor>
+            <div className="mt-6 flex items-start gap-3 rounded-xl bg-brand-soft p-4 text-xs leading-5 text-brand">
+              <LockIcon />
+              <p>
+                Your role is verified after sign-in. Government access cannot be
+                self-selected.
+              </p>
             </div>
-            <p className="mt-3 text-xs leading-5 text-muted">
-              Officer and reviewer access is assigned by DICT and cannot be
-              self-selected during live sign-in.
-            </p>
           </section>
         </div>
       </div>
@@ -126,91 +146,6 @@ export default async function SignInPage({
           </CardBody>
         </Card>
       ) : null}
-    </div>
-  )
-}
-
-function PhonePreview() {
-  return (
-    <div className="mx-auto mt-8 aspect-[9/14] w-full max-w-[15rem] overflow-hidden rounded-[1.75rem] border-[5px] border-white/90 bg-[#f7f9fc] text-foreground shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-      <div className="flex items-center justify-between px-4 pb-2 pt-3 text-[9px] font-bold">
-        <span>5:50</span>
-        <div className="flex items-center gap-1" aria-hidden="true">
-          <span>◒</span>
-          <span>▥</span>
-          <span>▰</span>
-        </div>
-      </div>
-      <div className="border-b border-border/60 bg-white px-4 pb-3 pt-1">
-        <p className="text-[8px] font-bold uppercase tracking-widest text-brand">
-          Local government
-        </p>
-        <div className="mt-1 flex items-end justify-between">
-          <p className="font-display text-base leading-tight">
-            Services near you
-          </p>
-          <span className="text-[9px] font-bold text-brand">View all</span>
-        </div>
-      </div>
-      <div className="space-y-2 p-3">
-        <PhoneService
-          icon="R"
-          title="Municipality of Rosario"
-          body="Official local government services"
-        />
-        <PhoneService
-          icon="BP"
-          title="Business permits"
-          body="Applications and renewals"
-        />
-        <PhoneService
-          icon="BC"
-          title="Barangay certificates"
-          body="Clearance, residency, indigency"
-        />
-      </div>
-      <div className="mx-3 mt-1 rounded-lg bg-brand px-3 py-2.5 text-center text-[10px] font-bold text-white">
-        Find my LGU
-      </div>
-      <div className="mt-3 flex justify-around border-t border-border/60 bg-white px-3 py-2 text-center text-[8px] text-muted">
-        <span className="font-bold text-brand">
-          ⌂<br />
-          Home
-        </span>
-        <span>
-          ▦<br />
-          Services
-        </span>
-        <span>
-          ▣<br />
-          Requests
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function PhoneService({
-  icon,
-  title,
-  body,
-}: {
-  icon: string
-  title: string
-  body: string
-}) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border/70 bg-white p-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border bg-brand-soft text-[9px] font-bold text-brand">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[10px] font-bold">{title}</span>
-        <span className="block truncate text-[8px] text-muted">{body}</span>
-      </span>
-      <span className="text-base text-brand" aria-hidden="true">
-        ›
-      </span>
     </div>
   )
 }
@@ -246,6 +181,57 @@ function LocationIcon() {
     >
       <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
       <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  )
+}
+
+function CitizenIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-4 w-4 fill-none stroke-current stroke-2"
+    >
+      <circle cx="12" cy="8" r="3" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  )
+}
+
+function OfficeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5 fill-none stroke-current stroke-2"
+    >
+      <path d="M3 9h18M5 9V6l7-3 7 3v3M5 19h14M7 9v10m5-10v10m5-10v10M3 22h18" />
+    </svg>
+  )
+}
+
+function ReviewIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5 fill-none stroke-current stroke-2"
+    >
+      <path d="M7 3h10v4H7zM5 5H4a1 1 0 0 0-1 1v15h18V6a1 1 0 0 0-1-1h-1" />
+      <path d="m8 14 2.5 2.5L16 11" />
+    </svg>
+  )
+}
+
+function LockIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="mt-0.5 h-4 w-4 shrink-0 fill-none stroke-current stroke-2"
+    >
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>
   )
 }
