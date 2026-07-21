@@ -43,11 +43,11 @@ test endpoint's `422` digest rejection.
 | Route | Purpose |
 |---|---|
 | `/` | Public landing and citizen/officer/reviewer gateway |
-| `/services` | Native citizen catalog of published LGU services |
+| `/citizen/services` | Native citizen catalog of published LGU services |
 | `/console/studio` | Generate, preview, validate, and confirm an eService |
-| `/lgus`, `/apply/[serviceId]`, `/track/[requestId]` | Citizen discovery, application, and status tracking |
+| `/citizen/lgus`, `/citizen/apply/[serviceId]`, `/citizen/track/[requestId]` | Citizen discovery, application, and status tracking |
 | `/review` | Resolve blocked configurations and publish approved exceptions |
-| `/pay/[requestId]` | Assess waivers and reconcile eGovPay |
+| `/citizen/pay/[requestId]` | Assess waivers and reconcile eGovPay |
 | `/console/requests` | Review, reject, approve, issue, anchor, and notify |
 | `/console/analytics` | LGU-scoped operational metrics |
 | `/verify` and `/verify/[id]` | Public document/hash verification and tamper test |

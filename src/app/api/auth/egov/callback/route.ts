@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
   // the officers table:  update officers set egov_sub = '<sub>' where ...
   console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role}`)
 
-  const fallback = role === 'officer' ? '/console' : role === 'reviewer' ? '/review' : '/'
+  const fallback = role === 'officer' ? '/console' : role === 'reviewer' ? '/review' : '/citizen/services'
   const response = NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))
   response.cookies.set(
     SESSION_COOKIE,

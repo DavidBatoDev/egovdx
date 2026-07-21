@@ -142,7 +142,7 @@ already cost us once.
 
 A feature graduates from harness to product when its status hits `ready`.
 
-1. Create the real route under `src/app/` (e.g. `src/app/apply/[serviceId]/`).
+1. Create the real route under `src/app/` (e.g. `src/app/citizen/apply/[serviceId]/`).
 2. Import the same `src/lib/` functions your harness calls. **Do not copy code
    out of the harness** — if you find yourself copying, the logic was in the
    wrong place and belongs in `src/lib/` first.

@@ -93,7 +93,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Dynamic form rendered from lgu_services.form_fields, with eVerify prefill, document upload, and submission.',
     dependsOn: ['egov-shell', 'everify', 'egov-pay'],
-    owns: ['src/app/apply/', 'src/components/form/'],
+    owns: ['src/app/citizen/apply/', 'src/components/form/'],
     provides: ['<DynamicForm fields={FormField[]} />'],
     apis: [],
     act: 'Act 3',
@@ -253,7 +253,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Applies waivers, then charges the configured fee through eGovPay. A named stage in the core flow — cannot be dropped.',
     dependsOn: [],
-    owns: ['src/lib/egov/pay.ts', 'src/app/pay/', 'src/app/api/pay/'],
+    owns: ['src/lib/egov/pay.ts', 'src/app/citizen/pay/', 'src/app/api/pay/'],
     provides: ['generatePayment(), checkPayment(), voidPayment()'],
     apis: ['eGOV PAY'],
     act: 'Act 3',

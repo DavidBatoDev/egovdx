@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export default async function ApplyPage({ params }: { params: Promise<{ serviceId: string }> }) {
   const { serviceId } = await params
   const session = await getSession()
-  if (!session) redirect(`/signin?next=/apply/${serviceId}`)
+  if (!session) redirect(`/signin?next=/citizen/apply/${serviceId}`)
   if (session.role !== 'citizen') redirect('/')
   const draft = await getOrCreateDraft(serviceId, session).catch(() => null)
   if (!draft) redirect('/')

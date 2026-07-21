@@ -43,8 +43,8 @@ export default async function RootLayout({
             <nav className="flex items-center gap-1 text-sm">
               {session?.role === 'citizen' ? (
                 <>
-                  <Link href="/services" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft sm:inline-flex">Services</Link>
-                  <Link href="/requests" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft md:inline-flex">My requests</Link>
+                  <Link href="/citizen/services" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft sm:inline-flex">Services</Link>
+                  <Link href="/citizen/requests" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft md:inline-flex">My requests</Link>
                 </>
               ) : null}
 

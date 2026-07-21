@@ -36,7 +36,7 @@ export function EverifyHarness({ mode, initialServiceId }: { mode: 'live' | 'moc
       <CardBody className="space-y-4">
         <Field label="Published service ID"><input className={inputClass} value={serviceId} onChange={(event) => setServiceId(event.target.value)} /></Field>
         <Field label="Face liveness session ID"><input className={inputClass} value={sessionId} onChange={(event) => setSessionId(event.target.value)} /></Field>
-        <div className="flex flex-wrap gap-2"><Button disabled={busy} onClick={verify}>{busy ? 'Verifying…' : 'Verify identity'}</Button><ButtonLink href="/signin?next=/implementation/everify" variant="secondary">Sign in as citizen</ButtonLink><ButtonLink href={`/apply/${serviceId}`} variant="ghost">Use complete citizen flow</ButtonLink></div>
+        <div className="flex flex-wrap gap-2"><Button disabled={busy} onClick={verify}>{busy ? 'Verifying…' : 'Verify identity'}</Button><ButtonLink href="/signin?next=/implementation/everify" variant="secondary">Sign in as citizen</ButtonLink><ButtonLink href={`/citizen/apply/${serviceId}`} variant="ghost">Use complete citizen flow</ButtonLink></div>
         {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       </CardBody>
     </Card>

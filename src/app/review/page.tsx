@@ -14,7 +14,7 @@ export default async function ReviewPage() {
     .eq('status', 'flagged').order('submitted_at', { ascending: true })
   if (error) throw error
   const services = (data ?? []) as unknown as ReviewService[]
-  return <div className="space-y-6"><PageHeader eyebrow="DICT reviewer" title="Validation review queue" description="Approve exceptions with an audit note, reject unsafe configurations, and publish only after every blocking finding is resolved." action={<ButtonLink href="/services" variant="secondary">Open citizen catalog</ButtonLink>} />
+  return <div className="space-y-6"><PageHeader eyebrow="DICT reviewer" title="Validation review queue" description="Approve exceptions with an audit note, reject unsafe configurations, and publish only after every blocking finding is resolved." action={<ButtonLink href="/citizen/services" variant="secondary">Open citizen catalog</ButtonLink>} />
     {!services.length ? <Card><EmptyState title="No flagged services" description="Template-conforming services publish without entering this queue." /></Card> : services.map((service) => {
       const unresolvedBlocks = service.flags.filter((flag) => flag.severity === 'block' && !flag.resolved).length
       return <Card key={service.id}><CardHeader title={`${service.template.name} · ${service.lgu.name}`} description={service.source_prompt || 'Generated from an uploaded form'} action={<StatusBadge status={service.status} />} />

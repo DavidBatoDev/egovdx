@@ -67,7 +67,7 @@ export function ApplicationClient({ draft, identityMock }: { draft: RequestWithS
   }
 
   async function submit() {
-    try { const body = await json(`/api/applications/${draft.id}/submit`, { method: 'POST' }); router.push(`/track/${body.requestId}`) } catch {}
+    try { const body = await json(`/api/applications/${draft.id}/submit`, { method: 'POST' }); router.push(`/citizen/track/${body.requestId}`) } catch {}
   }
 
   const documentsComplete = draft.service.required_docs.every((required) => documents.some((document) => document.requirement === required))

@@ -9,7 +9,7 @@ Updated after end-to-end unification.
   and the deliberate zero-service dashboard.
 - **eGOV PAY:** documented custom auth and HMAC contract, deterministic request
   transaction IDs, full/partial/zero-fee waiver handling, persisted checkout,
-  callback and citizen-triggered reconciliation, and `/pay/[requestId]`.
+  callback and citizen-triggered reconciliation, and `/citizen/pay/[requestId]`.
 - **Approval queue:** LGU/office scoping, verified-evidence review, paid/waived
   guard, rejection notes, and an atomic approval claim.
 - **Issuance orchestration:** LGU/year control-number sequence, immutable PDF,
@@ -43,6 +43,6 @@ not missing application implementation.
 
 ## Integration boundary
 
-Jasmin's eGovPH shell, `/apply`, and `/track` now call Elton's payment and
+Jasmin's eGovPH shell, `/citizen/apply`, and `/citizen/track` now call Elton's payment and
 officer contracts end to end. Ownership remains separate; integration no longer
 blocks either member.

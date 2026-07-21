@@ -159,7 +159,7 @@ export const flows = [
     name: 'Citizen catalog — published services render',
     owner: 'Jasmin',
     async run({ page, baseUrl, shot }) {
-      await visit(page, `${baseUrl}/services`)
+      await visit(page, `${baseUrl}/citizen/services`)
       const requestButtons = page.getByRole('link', { name: /request this/i })
       const count = await requestButtons.count()
       if (count === 0) throw new Error('No published services rendered — is seed.sql loaded?')
@@ -209,7 +209,7 @@ export const flows = [
     async run({ page, baseUrl }) {
       if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
         await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, `${baseUrl}/services`)
+        await visit(page, `${baseUrl}/citizen/services`)
         return 'local signed test session established'
       }
       await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
@@ -230,12 +230,12 @@ export const flows = [
     async run({ page, baseUrl, shot }) {
       await cleanupCitizenDrafts()
       await setQaSession(page, baseUrl, 'citizen')
-      await visit(page, `${baseUrl}/services`, { path: '/services' })
+      await visit(page, `${baseUrl}/citizen/services`, { path: '/citizen/services' })
       const first = page.getByRole('link', { name: /request this/i }).first()
       if ((await first.count()) === 0) throw new Error('No service to apply for')
 
       const href = await first.getAttribute('href')
-      await visit(page, `${baseUrl}${href}`, { path: href ?? '/apply' })
+      await visit(page, `${baseUrl}${href}`, { path: href ?? '/citizen/apply' })
 
       await page.getByRole('button', { name: /start face liveness/i }).click()
       await page.getByRole('heading', { name: /application form/i }).waitFor({ timeout: 30_000 })
@@ -306,7 +306,7 @@ export const flows = [
       await seedEltonRequest(id)
       try {
         await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, `${baseUrl}/pay/${id}`)
+        await visit(page, `${baseUrl}/citizen/pay/${id}`)
         await page.getByRole('heading', { name: /fee assessment/i }).waitFor({ timeout: 15_000 })
         await page.waitForTimeout(250)
         await page.getByRole('button', { name: /assess fee/i }).click()
@@ -369,7 +369,7 @@ export const flows = [
         await shot('officer-issued')
 
         await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, `${baseUrl}/track/${id}`)
+        await visit(page, `${baseUrl}/citizen/track/${id}`)
         await page.getByText(/official pdf is ready/i).waitFor()
         await page.getByRole('link', { name: /verify document/i }).waitFor()
         await shot('citizen-issued')

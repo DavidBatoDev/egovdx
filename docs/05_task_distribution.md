@@ -22,7 +22,7 @@ rendered from [`src/app/implementation/manifest.ts`](../src/app/implementation/m
 
 All application features are implemented and wired into one production journey.
 Jasmin's landing at `/` is the three-role gateway, citizens discover services at
-`/services`, and the officer, reviewer, citizen, issuance, and verification
+`/citizen/services`, and the officer, reviewer, citizen, issuance, and verification
 handoffs no longer depend on `/implementation`. The remaining work is live
 integration certification and presentation, not new product construction.
 
@@ -30,7 +30,7 @@ integration certification and presentation, not new product construction.
 |---|---|---|
 | **David** | AI Studio, bounded validation, form extraction, DICT review, generation cache, persistence, Supabase/Vercel deployment; authoritative probe and controlled production OpenAI fallback (199 eGov AI credits observed) | No application work remains. eGov AI's assistant response was malformed during certification, so keep monitoring the primary while the live OpenAI fallback provides schema-valid generation. |
 | **Joshua** | Server-side SSO exchange, role sessions, eVerify SDK liveness, standalone liveness adapter, eVerify request integration, and the dedicated eVerify diagnostic harness | Mint a fresh single-use exchange code and certify SSO → SDK liveness → eVerify once in live mode; map the returned officer `uniqid` before recording. |
-| **Jasmin** | Public landing and role gateway, brand system, eGovPH citizen shell, dynamic `/services` catalog, resumable application, private uploads, fee/waiver handoff, tracking | No remaining owned implementation work. Perform the final mobile/recording visual pass with the team. |
+| **Jasmin** | Public landing and role gateway, brand system, eGovPH citizen shell, dynamic `/citizen/services` catalog, resumable application, private uploads, fee/waiver handoff, tracking | No remaining owned implementation work. Perform the final mobile/recording visual pass with the team. |
 | **Earl** | PDF issuance, immutable storage, hash anchoring, block receipt/timestamp, public QR/hash verification and tamper rejection | No remaining owned implementation work. Keep the confirmed live-chain transaction available for the presentation. |
 | **Elton** | LGU onboarding, payment/waivers, approval/rejection, issuance orchestration, eMessage, retries and analytics; controlled live eMessage proof and production unified issuance QA | No application work remains. eGOV PAY remains mock because the documented test-token request is rejected by the provider with `422` / invalid digest; retry after DICT confirms the signing contract. |
 

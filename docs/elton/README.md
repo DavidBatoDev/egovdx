@@ -14,7 +14,7 @@ The detailed verification record is in [build_status.md](build_status.md).
 
 | Task | Status | Production route |
 |---|---|---|
-| eGOV PAY and waivers | `unified` | `/pay/[requestId]`, payment API, callback |
+| eGOV PAY and waivers | `unified` | `/citizen/pay/[requestId]`, payment API, callback |
 | eMessage | `unified` | Approval/issuance orchestration and noted retry |
 | LGU registration | `unified` | `/console/register`, `/console` |
 | Approval queue | `unified` | `/console/requests` |
@@ -34,7 +34,7 @@ signing contract. Production eMessage is live; the adapter requires
 `EGOV_EMESSAGE_TEST_NUMBER` and routes controlled proof there instead of the
 request's citizen number.
 
-Jasmin's `/apply` and `/track` routes now consume Elton's payment and approval
+Jasmin's `/citizen/apply` and `/citizen/track` routes now consume Elton's payment and approval
 contracts end to end. They remain outside Elton's ownership, but the integration
 boundary is complete.
 
@@ -70,7 +70,7 @@ Content-Type: application/json; charset=utf-8
 | `amount` | yes | total |
 | `settlement_template_uuid` | yes | `EGOV_PAY_SETTLEMENT_TEMPLATE_UUID` |
 | `txnid` | yes | **you** generate this — use the request id |
-| `redirect_url` | yes | back to `/pay/<requestId>?returned=1` until Jasmin's track route lands |
+| `redirect_url` | yes | back to `/citizen/pay/<requestId>?returned=1` |
 | `callback_url` | yes | your webhook, fires on every status change |
 | `digest` | yes | see below |
 | `currency`, `mobile`, `email`, `name`, `expires_at` | no | |
@@ -215,7 +215,7 @@ export async function approveAndIssue(requestId: string, officerSub: string): Pr
 
 ```
 src/lib/egov/pay.ts, emessage.ts
-src/app/pay/, src/app/api/pay/
+src/app/citizen/pay/, src/app/api/pay/
 src/app/console/register/, requests/, analytics/
 src/app/api/lgus/, src/app/api/requests/
 src/lib/payments/, src/lib/issuance/

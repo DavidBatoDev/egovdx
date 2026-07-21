@@ -125,7 +125,7 @@ via **eGovPH SSO**. Do not open `/implementation` during the product demo.
 
 **Actions**
 1. Return to the `/` role gateway as a citizen, then open the native
-   `/services` catalog → **LGUs** tab → search **Marilao**.
+   `/citizen/services` catalog → **LGUs** tab → search **Marilao**.
 2. The Business Sanitation Permit **you just created** is already there.
 
    > "No deployment. No app release. It was published thirty seconds ago."

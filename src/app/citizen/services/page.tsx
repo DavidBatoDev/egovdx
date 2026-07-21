@@ -32,7 +32,7 @@ export default async function ServicesPage() {
   }
 
   return (
-    <CitizenShell active="/services">
+    <CitizenShell active="/citizen/services">
       <PageHeader
         eyebrow="eGovPH · eLGU services"
         title="Request a local government document online"
@@ -74,7 +74,7 @@ export default async function ServicesPage() {
                       {service.waivers.map((waiver) => <Badge key={waiver.category} tone="neutral">Waived: {waiver.label}</Badge>)}
                     </div>
                   </div>
-                  <ButtonLink href={`/apply/${service.id}`}>Request this</ButtonLink>
+                  <ButtonLink href={`/citizen/apply/${service.id}`}>Request this</ButtonLink>
                 </li>
               ))}
             </ul>

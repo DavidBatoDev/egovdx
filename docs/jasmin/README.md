@@ -12,11 +12,11 @@
 All owned features are now `unified`. The finished decision-maker landing page
 is live at `/` with citizen, officer, and DICT reviewer entry points. The shared
 brand kit includes the eSee LGU design system and citizen primitives; the
-dynamic eGovPH shell reads published LGU services at `/services` without
-hardcoded localities; and `/apply/[serviceId]`
+dynamic eGovPH shell reads published LGU services at `/citizen/services` without
+hardcoded localities; and `/citizen/apply/[serviceId]`
 supports resumable identity verification, arbitrary generated fields, private
 evidence uploads, fee or waiver completion, submission, and
-`/track/[requestId]`. The focused citizen integration suite passes 7/7 checks.
+`/citizen/track/[requestId]`. The focused citizen integration suite passes 7/7 checks.
 
 There is no remaining owned implementation work. Jasmin's remaining team duty
 is the final mobile/recording visual pass after any integration-mode changes;
@@ -81,7 +81,7 @@ Mobile-ish framing sells it. Judges picture citizens on phones.
 
 ## Task 3 — citizen apply flow (`/implementation/citizen-apply`)
 
-The heart of the demo. Route: `/apply/[serviceId]`.
+The heart of the demo. Route: `/citizen/apply/[serviceId]`.
 
 ### Steps
 
@@ -92,7 +92,7 @@ The heart of the demo. Route: `/apply/[serviceId]`.
 3. **Form** — rendered dynamically from `lgu_services.form_fields`.
 4. **Documents** — upload to Supabase Storage → paths into `requests.uploaded_docs`.
 5. **Fee** — Elton's payment step, or "Waived: Student" if a waiver applies.
-6. **Submit** → `/track/[requestId]`.
+6. **Submit** → `/citizen/track/[requestId]`.
 
 ### The dynamic form renderer is the load-bearing piece
 
@@ -108,7 +108,7 @@ prefilled fields.
 field sets from arbitrary prompts; if a judge invents a service, your renderer
 draws its form. No per-service special-casing, no hardcoded layouts.
 
-### Track page — `/track/[requestId]`
+### Track page — `/citizen/track/[requestId]`
 
 Status timeline from `request_events` (already written by the backend), the fee
 status, and the download link once issued. This is where the citizen sees
@@ -137,7 +137,7 @@ know the shape exists.
 src/components/ui.tsx        ← shared; others must ask before editing
 src/components/shell/, form/
 src/app/globals.css
-src/app/(citizen)/, src/app/apply/, src/app/track/
+src/app/citizen/, src/components/citizen/
 public/brand/
 ```
 

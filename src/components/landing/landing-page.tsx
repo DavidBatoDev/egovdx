@@ -15,7 +15,7 @@ import { ButtonLink, cn } from '@/components/ui'
  */
 
 const OFFICER_SIGNIN = '/signin?next=/console'
-const CITIZEN_SIGNIN = '/signin?next=/services'
+const CITIZEN_SIGNIN = '/signin?next=/citizen/services'
 const REVIEWER_SIGNIN = '/signin?next=/review'
 
 // ------------------------------------------------------------------ helpers
@@ -109,7 +109,7 @@ const BENEFICIARIES = [
       'SMS the moment it issues',
     ],
     cta: 'Browse services',
-    href: '/services',
+    href: '/citizen/services',
   },
   {
     who: 'For the barangay',
