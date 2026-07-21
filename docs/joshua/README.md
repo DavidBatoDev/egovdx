@@ -14,13 +14,13 @@ You have the **longest serial chain in the build**, and it got longer than we
 first thought:
 
 ```
-SSO → exchange_code → profile
-                        ↓
-        Face Liveness SDK → session_id
-                        ↓
-        eVerify /api/query (session_id is REQUIRED)
-                        ↓
-                  prefilled form
+valid exchange_code → SSO Authentication → profile
+                                          ↓
+                  Face Liveness SDK → session_id
+                                          ↓
+                  eVerify /api/query (session_id is REQUIRED)
+                                          ↓
+                                    prefilled form
 ```
 
 `eVerify` **cannot be called without a `face_liveness_session_id`**. That's why
@@ -29,34 +29,22 @@ of the critical path. Start at 22:30, freeze contracts by 23:00.
 
 ---
 
-## Task 1 — fix SSO (`/implementation/egov-sso`)
+## Task 1 — simplify SSO authentication (`/implementation/egov-sso`)
 
-My implementation is **wrong**. I built an OAuth authorize-redirect
-(`buildAuthorizeUrl` in `src/lib/egov/sso.ts`). The real thing is a **widget**.
+The earlier client-side SSO instructions are deprecated. Do **not** build a
+widget, add a portal element, expose a client ID, or invent an OAuth
+`/authorize` redirect. `API_Reference.md` defines the server-side SSO
+Authentication contract only: the app receives a valid `exchange_code` from
+its configured upstream sign-in handoff, then resolves the profile immediately.
 
-### How it actually works
+### Server-side SSO sequence
 
-1. The **browser** renders the eGovPH widget, which handles the entire login UI
-   (mobile/email → OTP → MPIN).
-2. On success it hands your callback an **`exchange_code`** — not a token.
-3. Your **server** swaps that for an access token. This must be server-side; it
-   needs `partner_secret`.
-
-```jsx
-import EGovSSOWidget from 'egov-hackathon-sso-widget'
-
-<EGovSSOWidget
-  environment="STAGING"
-  client_id={process.env.NEXT_PUBLIC_EGOV_SSO_CLIENT_ID}
-  on_success_function={(exchange_code) => { /* POST to your API route */ }}
-/>
-<div id="egov-sso-widget-portal" />
-```
-
-`#egov-sso-widget-portal` **must exist in the DOM even in React** — the modal
-renders outside the component tree. Missing it is a silent no-op.
-
-Then server-side:
+1. Receive a non-empty **`exchange_code`** in the callback or another
+   server-controlled handoff. The API reference intentionally does not prescribe
+   the browser UI that obtained it.
+2. Exchange it immediately for an access token. This is server-only because it
+   requires `partner_secret`.
+3. Use that token to call SSO Authentication and establish the local session.
 
 ```
 POST {base_url}/api/token
@@ -70,8 +58,15 @@ Authorization: Bearer <access_token>          ← NO REQUEST BODY
               barangay_code, municipality_code, region_code, province_code } }
 ```
 
-`data.uniqid` is the subject — it's what `officers.egov_sub` matches on. The
-exchange code is **single-use and short-lived**; exchange it immediately.
+Use `EGOV_SSO_PARTNER_CODE` and `EGOV_SSO_PARTNER_SECRET` in the token request;
+they must never reach the browser. The SSO Authentication request has **no
+body**. `data.uniqid` is the subject — it is what `officers.egov_sub` matches
+on. The exchange code is **single-use and short-lived**, so exchange it
+immediately.
+
+Normalize exactly once in `src/lib/egov/sso.ts`: read the profile from
+`data`, map `uniqid` to `EgovProfile.sub`, and compose the display name from
+the documented snake_case name fields. Preserve the raw payload for audit.
 
 ### Keep working
 
@@ -179,6 +174,54 @@ export async function verifyIdentity(
 
 Commit these with mock data behind them, then refine. Jasmin cannot start the
 apply form until `VerifiedIdentity` is fixed.
+
+---
+
+## Execution checklist
+
+### Shared delivery
+
+- [ ] Freeze and commit the three exported contracts with realistic mock data.
+- [ ] Keep every call behind `callEgov()` and each `EGOV_*_MODE=live|mock` flag.
+- [ ] Render a visible `<SourceBadge>` whenever a fixture supplies the result.
+- [ ] Keep each implementation harness working, then wire the same `src/lib/`
+  functions into the real sign-in and citizen-apply routes.
+- [ ] Add or update the owned browser-QA flow, run `npx tsc --noEmit`, and set
+  the relevant manifest entries to `ready` and then `unified`.
+
+### 1. Simplified SSO authentication
+
+- [ ] Remove `buildAuthorizeUrl` and all browser-widget/client-ID assumptions;
+  no guessed live authorization URL remains.
+- [ ] Accept the upstream `exchange_code` only in a server-controlled handoff
+  and exchange it immediately.
+- [ ] `POST /api/token` sends `exchange_code`, `scope: "SSO_AUTHENTICATION"`,
+  `partner_code`, and `partner_secret`.
+- [ ] `POST /api/partner/sso_authentication` sends only the resulting bearer
+  token and no request body.
+- [ ] Normalize `data.uniqid`, documented profile fields, and the raw payload;
+  retain the existing officer lookup and local role/session behavior.
+- [ ] Confirm officer, reviewer, and citizen mock personas still sign in.
+
+### 2. Face liveness
+
+- [ ] Use the eVerify Face Liveness Web SDK for the citizen verification path
+  and retain its `result.session_id`.
+- [ ] Pass that `session_id` to eVerify as `face_liveness_session_id`; do not
+  substitute the standalone REST token.
+- [ ] For the standalone adapter, use lowercase `x-api-key` and accept only
+  `status === "SUCCEEDED" && confidence_score >= 95.0`.
+- [ ] Persist the accepted liveness score to `requests.liveness_score`; show a
+  retry path for a rejected or cancelled check.
+
+### 3. eVerify
+
+- [ ] Obtain the eVerify server token with `client_id` and `client_secret`.
+- [ ] Call `/api/query` with demographics and the required liveness session ID.
+- [ ] Normalize `data.full_name` and `data.full_address` from their single-string
+  response fields without changing the `VerifiedIdentity` contract.
+- [ ] Keep `yearsOfResidency: null`; it is citizen-declared, not PhilSys-verified.
+- [ ] Surface the verification result/reference honestly and badge fixture data.
 
 ---
 
