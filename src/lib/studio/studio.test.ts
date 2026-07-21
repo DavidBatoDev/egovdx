@@ -9,6 +9,18 @@ import type { ServiceTemplate } from '@/lib/supabase/types'
 test('extracts fenced and prose-wrapped JSON', () => assert.deepEqual(extractJsonObject('Result:\n```json\n{"ok":true}\n```'), { ok: true }))
 test('rejects malformed JSON', () => assert.throws(() => extractJsonObject('{broken}')))
 test('rejects schema-invalid generation', () => assert.throws(() => parseGeneratedService({ templateCode: 'X' })))
+test('marks government profile fields for eVerify prefill', () => {
+  const service = parseGeneratedService({
+    templateCode: 'TEST', name: 'Test service', feeAmount: 0, waivers: [], requiredDocs: [],
+    eligibility: {}, approvalOffice: null, confidence: 0.9,
+    formFields: [
+      { key: 'full_name', label: 'Full Name', type: 'text', required: true, options: [], source: null },
+      { key: 'mayor_permit_number', label: 'Mayor’s Permit Number', type: 'text', required: true, options: [], source: null },
+    ],
+  })
+  assert.equal(service.formFields[0].source, 'everify')
+  assert.equal(service.formFields[1].source, undefined)
+})
 test('parses extractor HTML and infers keys/types', () => {
   const result = parseExtractionHtml('<b>Document Type</b>: Permit<br><b>Date of Birth</b>: 2000-01-01<br><b>Complete Address</b>: Marilao')
   assert.equal(result.documentTitle, 'Permit'); assert.equal(result.fields[0].key, 'date_of_birth'); assert.equal(result.fields[0].type, 'date'); assert.equal(result.fields[1].type, 'textarea')

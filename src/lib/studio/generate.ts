@@ -35,16 +35,19 @@ export async function generateService(prompt: string, lguId: string): Promise<Ge
 export async function generateServiceFromExtraction(
   extraction: ExtractionResult,
   lguId: string,
+  prompt: string,
 ): Promise<GenerationResult> {
+  const officerRequest = prompt.trim()
+  if (!officerRequest) throw new Error('Describe the eService before generating')
   const normalized = JSON.stringify({
     title: extraction.documentTitle,
     fields: extraction.fields.map(({ label, key, type, sampleValue }) => ({ label, key, type, sampleValue })),
   })
   return generate(
-    `Map this extracted blank government form into an approved service: ${normalized}`,
+    `Officer request: ${officerRequest}\n\nMap this extracted permit or eService template into an approved service: ${normalized}`,
     lguId,
     'extraction',
-    normalized,
+    JSON.stringify({ officerRequest, template: normalized }),
   )
 }
 
@@ -62,7 +65,7 @@ async function generate(
 
   if (egovMode('AI') === 'mock') {
     const result: GenerationResult = {
-      data: mockService(input, templates),
+      data: parseGeneratedService(mockService(input, templates)),
       source: 'mock',
       engine: 'mock',
       model: 'deterministic-studio-fixture-v1',
