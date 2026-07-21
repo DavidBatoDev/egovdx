@@ -20,6 +20,12 @@ export type SessionRole = 'citizen' | 'officer' | 'reviewer'
 export type Session = {
   sub: string
   name: string
+  /** Demographics from the documented SSO profile, read by the server eVerify flow. */
+  firstName: string | null
+  middleName: string | null
+  lastName: string | null
+  suffix: string | null
+  birthdate: string | null
   role: SessionRole
   /** Set for officers; null for citizens and DICT reviewers. */
   lguId: string | null
@@ -69,6 +75,11 @@ export async function getSession(): Promise<Session | null> {
     return {
       sub: String(payload.sub ?? payload.subject ?? ''),
       name: String(payload.name ?? ''),
+      firstName: stringOrNull(payload.firstName),
+      middleName: stringOrNull(payload.middleName),
+      lastName: stringOrNull(payload.lastName),
+      suffix: stringOrNull(payload.suffix),
+      birthdate: stringOrNull(payload.birthdate),
       role: (payload.role as SessionRole) ?? 'citizen',
       lguId: (payload.lguId as string | null) ?? null,
       mobile: (payload.mobile as string | null) ?? null,
@@ -77,6 +88,10 @@ export async function getSession(): Promise<Session | null> {
   } catch {
     return null // expired or tampered — treat as signed out
   }
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null
 }
 
 function isEgovSource(value: unknown): value is EgovSource {

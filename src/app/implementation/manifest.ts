@@ -108,7 +108,7 @@ export const FEATURES: Feature[] = [
     slug: 'face-liveness',
     name: 'Face liveness check',
     owner: 'Joshua',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Browser SDK liveness capture yielding a session_id. Hard prerequisite for eVerify — not an optional extra step.',
     dependsOn: ['egov-sso'],
@@ -124,12 +124,15 @@ export const FEATURES: Feature[] = [
     slug: 'everify',
     name: 'eVerify identity pull',
     owner: 'Joshua',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Verifies against PhilSys using the liveness session_id, returning the demographics that prefill every form.',
     dependsOn: ['face-liveness'],
-    owns: ['src/lib/egov/everify.ts'],
-    provides: ['verifyIdentity(), verifyByQr() → VerifiedIdentity'],
+    owns: ['src/lib/egov/everify.ts', 'src/app/api/everify/'],
+    provides: [
+      'verifyIdentity(query + SDK session_id) → VerifiedIdentity',
+      'POST /api/everify/verify → signed request receipt',
+    ],
     apis: ['#NationalID | eVerify'],
     act: 'Act 3',
   },

@@ -111,6 +111,47 @@ export const flows = [
   },
 
   {
+    id: 'citizen-identity-submit',
+    name: 'Citizen identity chain — SDK capture, eVerify prefill, and request submission',
+    owner: 'Joshua',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/api/auth/egov/login?persona=citizen`, {
+        path: '/api/auth/egov/login',
+      })
+      if (page.url().includes('error=')) {
+        throw new Error(`Citizen sign-in failed: ${new URL(page.url()).searchParams.get('error')}`)
+      }
+
+      await visit(page, page.url(), { path: '/' })
+      const firstService = page.getByRole('link', { name: /request this/i }).first()
+      const href = await firstService.getAttribute('href')
+      if (!href) throw new Error('Citizen landing page did not provide a request link')
+
+      await visit(page, `${baseUrl}${href}`, { path: href })
+      await page.getByRole('heading', { level: 1 }).waitFor({ timeout: 10_000 })
+      await page.getByRole('button', { name: /start face liveness/i }).click()
+      await page.getByText('mock-everify-liveness-session', { exact: true }).waitFor({
+        timeout: 10_000,
+      })
+
+      await page.getByRole('button', { name: /^verify identity$/i }).click()
+      await page.getByText('Identity record retrieved', { exact: true }).waitFor({
+        timeout: 10_000,
+      })
+      await page.getByText('Mock data', { exact: true }).last().waitFor({ timeout: 10_000 })
+
+      await page.getByLabel('Purpose of Request').selectOption({ label: 'Employment' })
+      await page.getByLabel('Years of Residency').fill('6')
+      await shot('identity-prefilled')
+
+      await page.getByRole('button', { name: /^submit request$/i }).click()
+      await page.getByText('Pending LGU approval', { exact: true }).waitFor({ timeout: 10_000 })
+      await shot('request-submitted')
+      return 'SDK session verified by eVerify and persisted on the submitted request'
+    },
+  },
+
+  {
     id: 'landing',
     name: 'Citizen landing — published services render',
     owner: 'Jasmin',

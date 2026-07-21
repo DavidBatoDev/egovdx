@@ -239,22 +239,22 @@ apply form until `VerifiedIdentity` is fixed.
 
 - [x] Use the eVerify Face Liveness Web SDK for the citizen verification path
   and retain its `result.session_id`.
-- [ ] Pass that `session_id` to eVerify as `face_liveness_session_id`; do not
-  substitute the standalone REST token. (Completed with Task 3.)
+- [x] Pass that `session_id` to eVerify as `face_liveness_session_id`; do not
+  substitute the standalone REST token.
 - [x] For the standalone adapter, use lowercase `x-api-key` and accept only
   `status === "SUCCEEDED" && confidence_score >= 95.0`.
-- [ ] On citizen submit, persist the SDK `session_id` and `liveness_passed`.
+- [x] On citizen submit, persist the SDK `session_id` and `liveness_passed`.
   The documented SDK returns no confidence score, so `liveness_score` remains
   `null`; the capture component already shows a retry path for errors or cancellation.
 
 ### 3. eVerify
 
-- [ ] Obtain the eVerify server token with `client_id` and `client_secret`.
-- [ ] Call `/api/query` with demographics and the required liveness session ID.
-- [ ] Normalize `data.full_name` and `data.full_address` from their single-string
+- [x] Obtain the eVerify server token with `client_id` and `client_secret`.
+- [x] Call `/api/query` with demographics and the required liveness session ID.
+- [x] Normalize `data.full_name` and `data.full_address` from their single-string
   response fields without changing the `VerifiedIdentity` contract.
-- [ ] Keep `yearsOfResidency: null`; it is citizen-declared, not PhilSys-verified.
-- [ ] Surface the verification result/reference honestly and badge fixture data.
+- [x] Keep `yearsOfResidency: null`; it is citizen-declared, not PhilSys-verified.
+- [x] Surface the verification result/reference honestly and badge fixture data.
 
 ---
 

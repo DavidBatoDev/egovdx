@@ -65,6 +65,11 @@ export async function GET(req: NextRequest) {
   const session: Session = {
     sub: profile.sub,
     name: officer?.full_name ?? profile.fullName,
+    firstName: profile.firstName,
+    middleName: profile.middleName,
+    lastName: profile.lastName,
+    suffix: profile.suffix,
+    birthdate: profile.birthdate,
     role,
     lguId: officer?.lgu_id ?? null,
     mobile: profile.mobile,

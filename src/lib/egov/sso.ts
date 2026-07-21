@@ -12,6 +12,11 @@ import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 export type EgovProfile = {
   sub: string
   fullName: string
+  firstName: string | null
+  middleName: string | null
+  lastName: string | null
+  suffix: string | null
+  birthdate: string | null
   email: string | null
   mobile: string | null
   raw: Record<string, unknown>
@@ -86,9 +91,18 @@ function normalizeProfile(raw: Record<string, unknown>): EgovProfile {
     .filter(isNonEmptyString)
     .join(' ')
 
+  const firstName = stringOrNull(profile.first_name)
+  const lastName = stringOrNull(profile.last_name)
+  const birthdate = stringOrNull(profile.birth_date)
+
   return {
     sub: profile.uniqid,
     fullName: fullName || 'eGovPH User',
+    firstName,
+    middleName: stringOrNull(profile.middle_name),
+    lastName,
+    suffix: stringOrNull(profile.suffix),
+    birthdate,
     email: stringOrNull(profile.email),
     mobile: stringOrNull(profile.mobile),
     raw,
@@ -116,6 +130,11 @@ function mockProfile(code: string): EgovProfile {
     officer: {
       sub: 'demo-officer-sub',
       fullName: 'Maria Santos',
+      firstName: 'Maria',
+      middleName: null,
+      lastName: 'Santos',
+      suffix: null,
+      birthdate: '1985-04-12',
       email: 'maria.santos@plainview.gov.ph',
       mobile: '+639171234567',
       raw: { persona: 'officer' },
@@ -123,6 +142,11 @@ function mockProfile(code: string): EgovProfile {
     reviewer: {
       sub: 'demo-reviewer-sub',
       fullName: 'Jose Reyes',
+      firstName: 'Jose',
+      middleName: null,
+      lastName: 'Reyes',
+      suffix: null,
+      birthdate: '1981-08-21',
       email: 'jose.reyes@dict.gov.ph',
       mobile: '+639179876543',
       raw: { persona: 'reviewer' },
@@ -130,6 +154,11 @@ function mockProfile(code: string): EgovProfile {
     citizen: {
       sub: 'demo-citizen-sub',
       fullName: 'Juana Dela Cruz',
+      firstName: 'Juana',
+      middleName: 'Dela',
+      lastName: 'Cruz',
+      suffix: null,
+      birthdate: '1992-03-14',
       email: 'juana.delacruz@example.ph',
       mobile: '+639175551234',
       raw: { persona: 'citizen' },

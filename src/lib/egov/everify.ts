@@ -1,20 +1,15 @@
 import 'server-only'
-import { callEgov, egovFetch, getAccessToken, type EgovResult } from './client'
+import { authHeaders, callEgov, egovFetch, getAccessToken, type EgovResult } from './client'
 
 /**
- * #NationalID | eVerify — identity verification against PhilSys.
+ * #NationalID | eVerify — identity verification against PhilSys/NIDAS.
  *
- *   POST {base}/api/auth            Authenticate (Generate Access Token)
- *   POST {base}/api/query           Verify Personal Information
- *   POST {base}/api/query/qr/check  QR Check
- *   POST {base}/api/query/qr        QR Verify
- *
- * This is the load-bearing integration: it's what lets us prefill a citizen's
- * name, address, and residency instead of asking them to retype what the
- * government already knows about them.
+ * The browser eVerify Face Liveness SDK returns the session ID required by
+ * /api/query. Its session ID is deliberately distinct from the standalone
+ * Face Liveness REST API token and must never be substituted with that token.
  */
 
-/** Normalized shape the rest of the app consumes. Insulates UI from the wire format. */
+/** Normalized shape the rest of the app consumes. */
 export type VerifiedIdentity = {
   verified: boolean
   fullName: string
@@ -23,28 +18,35 @@ export type VerifiedIdentity = {
   lastName: string
   birthdate: string
   address: string
-  /** Derived, not returned directly — see deriveResidencyYears. */
-  yearsOfResidency: number | null
+  /** eVerify confirms a current address, not a residency duration. */
+  yearsOfResidency: null
   mobile: string | null
-  philsysReference: string | null
+  /** eVerify does not return a PhilSys Card Number for this flow. */
+  philsysReference: null
+  /** eVerify's documented verification reference, for request audit/display. */
+  everifyReference: string | null
 }
 
 export type EverifyQuery = {
   firstName: string
-  middleName?: string
+  middleName?: string | null
   lastName: string
+  suffix?: string | null
   birthdate: string
-  /** PhilSys Card Number, when the citizen has one to hand. */
-  pcn?: string
+  /** The exact `result.session_id` emitted by the eVerify Face Liveness SDK. */
+  faceLivenessSessionId: string
+}
+
+type TokenResponse = {
+  data?: {
+    access_token?: unknown
+    expires_at?: unknown
+  }
 }
 
 async function token(): Promise<string> {
   return getAccessToken('EVERIFY', async () => {
-    const res = await egovFetch<{
-      access_token?: string
-      token?: string
-      expires_in?: number
-    }>('EVERIFY', '/api/auth', {
+    const response = await egovFetch<TokenResponse>('EVERIFY', '/api/auth', {
       method: 'POST',
       body: JSON.stringify({
         client_id: process.env.EGOV_EVERIFY_CLIENT_ID,
@@ -52,66 +54,118 @@ async function token(): Promise<string> {
       }),
     })
 
-    const accessToken = res.access_token ?? res.token
-    if (!accessToken) throw new Error('eVerify /api/auth returned no token')
+    const accessToken = response.data?.access_token
+    if (typeof accessToken !== 'string' || !accessToken) {
+      throw new Error('eVerify /api/auth returned no data.access_token')
+    }
 
-    return { token: accessToken, expiresInSeconds: res.expires_in ?? 3600 }
+    return {
+      token: accessToken,
+      expiresInSeconds: secondsUntil(response.data?.expires_at),
+    }
   })
 }
 
-/**
- * The catalog documents the endpoint but not the response body, so we read
- * defensively across the field names PhilSys-adjacent APIs commonly use. When
- * the Postman collection lands, tighten this to the real shape — this function
- * is the only place that needs to change.
- */
-function normalize(raw: Record<string, any>): VerifiedIdentity {
-  const p = raw.data ?? raw.result ?? raw
+function secondsUntil(expiresAt: unknown): number {
+  const epochSeconds =
+    typeof expiresAt === 'number'
+      ? expiresAt
+      : typeof expiresAt === 'string' && /^\d+$/.test(expiresAt)
+        ? Number(expiresAt)
+        : Number.NaN
 
-  const first = p.firstName ?? p.first_name ?? p.givenName ?? ''
-  const middle = p.middleName ?? p.middle_name ?? ''
-  const last = p.lastName ?? p.last_name ?? p.familyName ?? ''
+  if (!Number.isFinite(epochSeconds)) return 3600
 
-  const address =
-    p.address ??
-    p.permanentAddress ??
-    p.permanent_address ??
-    [p.houseNo, p.street, p.barangay, p.cityMunicipality, p.province]
-      .filter(Boolean)
-      .join(', ')
+  // Avoid caching a token that is about to expire. getAccessToken also reserves
+  // a 60-second skew window before returning an item from its cache.
+  return Math.max(60, Math.floor(epochSeconds - Date.now() / 1000))
+}
 
-  return {
-    verified: p.verified ?? p.isVerified ?? p.status === 'success',
-    fullName: [first, middle, last].filter(Boolean).join(' ').trim(),
-    firstName: first,
-    middleName: middle,
-    lastName: last,
-    birthdate: p.birthdate ?? p.dateOfBirth ?? p.date_of_birth ?? '',
-    address: address || '',
-    yearsOfResidency: deriveResidencyYears(p),
-    mobile: p.mobileNumber ?? p.mobile ?? p.contactNumber ?? null,
-    philsysReference: p.pcn ?? p.philsysNumber ?? p.reference ?? null,
-  }
+/** Verify Personal Information — POST /api/query. */
+export async function verifyIdentity(q: EverifyQuery): Promise<EgovResult<VerifiedIdentity>> {
+  return callEgov(
+    'EVERIFY',
+    async () => {
+      const raw = await egovFetch<Record<string, unknown>>('EVERIFY', '/api/query', {
+        method: 'POST',
+        headers: authHeaders('EVERIFY', await token()),
+        body: JSON.stringify({
+          first_name: q.firstName,
+          ...(q.middleName ? { middle_name: q.middleName } : {}),
+          last_name: q.lastName,
+          ...(q.suffix ? { suffix: q.suffix } : {}),
+          birth_date: q.birthdate,
+          face_liveness_session_id: q.faceLivenessSessionId,
+        }),
+      })
+      return normalize(raw, q)
+    },
+    () => mockIdentity(q),
+  )
+}
+
+/** QR Verify — POST /api/query/qr, also bound to the SDK liveness session. */
+export async function verifyByQr(
+  qrPayload: string,
+  faceLivenessSessionId: string,
+): Promise<EgovResult<VerifiedIdentity>> {
+  return callEgov(
+    'EVERIFY',
+    async () => {
+      const raw = await egovFetch<Record<string, unknown>>('EVERIFY', '/api/query/qr', {
+        method: 'POST',
+        headers: authHeaders('EVERIFY', await token()),
+        body: JSON.stringify({
+          value: qrPayload,
+          face_liveness_session_id: faceLivenessSessionId,
+        }),
+      })
+      return normalize(raw, {
+        firstName: '',
+        lastName: '',
+        birthdate: '',
+        faceLivenessSessionId,
+      })
+    },
+    () =>
+      mockIdentity({
+        firstName: 'Juana',
+        middleName: 'Dela',
+        lastName: 'Cruz',
+        birthdate: '1992-03-14',
+        faceLivenessSessionId,
+      }),
+  )
 }
 
 /**
- * eVerify confirms *current* registered address; it does not return a residency
- * duration. Where a start date is available we compute from it, otherwise we
- * return null and the citizen declares it on the form.
- *
- * This gap is real and worth stating out loud in the pitch rather than
- * pretending the number is authoritative — the brief already concedes that
- * barangay-level residency history mostly isn't in eGovPH yet.
+ * eVerify returns `full_name` and address values as single strings. The query
+ * normally contains exact name parts from SSO, while QR verification does not;
+ * split the documented name string only when those source parts are absent.
  */
-function deriveResidencyYears(p: Record<string, any>): number | null {
-  const since = p.residencySince ?? p.residency_start ?? p.addressSince
-  if (!since) return null
+function normalize(raw: Record<string, unknown>, q: EverifyQuery): VerifiedIdentity {
+  const data = raw.data
+  if (!isRecord(data)) throw new Error('eVerify response contained no data object')
 
-  const start = new Date(since)
-  if (Number.isNaN(start.getTime())) return null
+  const fullName = stringValue(data.full_name)
+  const parsedName = splitFullName(fullName)
+  const firstName = q.firstName || parsedName.firstName
+  const middleName = q.middleName ?? parsedName.middleName
+  const lastName = q.lastName || parsedName.lastName
 
-  const years = (Date.now() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-  return Math.floor(years)
+  return {
+    verified: true,
+    fullName: fullName || [firstName, middleName, lastName].filter(Boolean).join(' '),
+    firstName,
+    middleName,
+    lastName,
+    birthdate: stringValue(data.birth_date) || q.birthdate,
+    address: stringValue(data.full_address) || stringValue(data.present_full_address),
+    yearsOfResidency: null,
+    mobile: stringOrNull(data.mobile_number),
+    philsysReference: null,
+    everifyReference: stringOrNull(data.reference),
+  }
 }
 
 function mockIdentity(q: EverifyQuery): VerifiedIdentity {
@@ -123,54 +177,41 @@ function mockIdentity(q: EverifyQuery): VerifiedIdentity {
     lastName: q.lastName,
     birthdate: q.birthdate,
     address: '24 Sampaguita St., Barangay Plainview, Mandaluyong City, NCR',
-    yearsOfResidency: 6,
+    yearsOfResidency: null,
     mobile: '+639171234567',
-    philsysReference: '0000-0000-0000-0000',
+    philsysReference: null,
+    everifyReference: 'MOCK-EVERIFY-REFERENCE-0001',
   }
 }
 
-/** Verify Personal Information — POST /api/query */
-export async function verifyIdentity(
-  q: EverifyQuery,
-): Promise<EgovResult<VerifiedIdentity>> {
-  return callEgov(
-    'EVERIFY',
-    async () => {
-      const raw = await egovFetch<Record<string, any>>('EVERIFY', '/api/query', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${await token()}` },
-        body: JSON.stringify({
-          first_name: q.firstName,
-          middle_name: q.middleName ?? '',
-          last_name: q.lastName,
-          birthdate: q.birthdate,
-          ...(q.pcn ? { pcn: q.pcn } : {}),
-        }),
-      })
-      return normalize(raw)
-    },
-    () => mockIdentity(q),
-  )
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** QR Verify — POST /api/query/qr. Used when the citizen presents a National ID QR. */
-export async function verifyByQr(qrPayload: string): Promise<EgovResult<VerifiedIdentity>> {
-  return callEgov(
-    'EVERIFY',
-    async () => {
-      const raw = await egovFetch<Record<string, any>>('EVERIFY', '/api/query/qr', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${await token()}` },
-        body: JSON.stringify({ qr: qrPayload }),
-      })
-      return normalize(raw)
-    },
-    () =>
-      mockIdentity({
-        firstName: 'Juana',
-        middleName: 'Dela',
-        lastName: 'Cruz',
-        birthdate: '1992-03-14',
-      }),
-  )
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function stringOrNull(value: unknown): string | null {
+  const normalized = stringValue(value)
+  return normalized || null
+}
+
+function splitFullName(fullName: string): {
+  firstName: string
+  middleName: string
+  lastName: string
+} {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length <= 1) return { firstName: parts[0] ?? '', middleName: '', lastName: '' }
+  if (parts.length === 2) return { firstName: parts[0], middleName: '', lastName: parts[1] }
+
+  // The documented eVerify sample uses a two-word surname (DELA CRUZ). This
+  // preserves it; SSO-supplied parts remain authoritative whenever available.
+  const surnameLength = parts.length >= 4 ? 2 : 1
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -surnameLength).join(' '),
+    lastName: parts.slice(-surnameLength).join(' '),
+  }
 }
