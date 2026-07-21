@@ -27,10 +27,27 @@ export function ApplicationClient({ draft, identityMock }: { draft: RequestWithS
   const prefill = useMemo(() => {
     const result: Record<string, string | number> = {}
     for (const field of draft.service.form_fields) {
+      if (field.source !== 'everify') continue
       const key = field.key.toLowerCase()
-      if (key.includes('name')) result[field.key] = String(identity?.fullName ?? identity?.full_name ?? draft.citizen_name ?? '')
-      else if (key.includes('address')) result[field.key] = String(identity?.address ?? identity?.full_address ?? '')
-      else if (key.includes('birth')) result[field.key] = String(identity?.birthdate ?? identity?.birth_date ?? '')
+      const profile: Record<string, unknown> = {
+        full_name: identity?.fullName ?? identity?.full_name ?? draft.citizen_name,
+        name: identity?.fullName ?? identity?.full_name ?? draft.citizen_name,
+        first_name: identity?.firstName ?? identity?.first_name,
+        middle_name: identity?.middleName ?? identity?.middle_name,
+        last_name: identity?.lastName ?? identity?.last_name,
+        birth_date: identity?.birthdate ?? identity?.birth_date,
+        date_of_birth: identity?.birthdate ?? identity?.birth_date,
+        mobile: identity?.mobile,
+        mobile_number: identity?.mobile,
+        complete_address: identity?.address ?? identity?.full_address,
+        residential_address: identity?.address ?? identity?.full_address,
+        city: identity?.municipality,
+        photo: identity?.photoUrl ?? identity?.photo,
+        signature: identity?.signatureUrl ?? identity?.signature,
+        ...identity,
+      }
+      const value = profile[key]
+      if (value != null && value !== '') result[field.key] = String(value)
     }
     return result
   }, [draft, identity])

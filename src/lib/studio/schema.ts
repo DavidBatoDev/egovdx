@@ -24,6 +24,26 @@ const waiverSchema = z.object({
 
 const editableWaiverSchema = waiverSchema.extend({ amount: z.number().nonnegative().nullable().optional().default(null) })
 
+/**
+ * eVerify already supplies these attributes after identity verification. Keep
+ * this list deliberately flat: generated form labels vary, but the citizen
+ * form needs one unambiguous signal that the value must be prefilled instead
+ * of requested again.
+ */
+const EVERIFY_PROFILE_FIELD_KEYS = new Set([
+  'full_name', 'name', 'first_name', 'middle_name', 'last_name', 'suffix',
+  'email', 'birth_date', 'date_of_birth', 'gender', 'nationality', 'mobile',
+  'mobile_number', 'address', 'complete_address', 'residential_address',
+  'street', 'barangay', 'municipality', 'city', 'province', 'region',
+  'country', 'postal', 'postal_code', 'address_line_2', 'photo', 'signature',
+])
+
+function isEverifyProfileField(field: { key: string; label: string }) {
+  const key = field.key.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+  const label = field.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+  return EVERIFY_PROFILE_FIELD_KEYS.has(key) || EVERIFY_PROFILE_FIELD_KEYS.has(label)
+}
+
 export const generatedServiceSchema = z.object({
   templateCode: z.string().min(1),
   name: z.string().min(1),
@@ -70,7 +90,7 @@ export function normalizeGeneratedService(raw: RawGeneratedService): GeneratedSe
     formFields: raw.formFields.map(({ options, source, ...field }) => ({
       ...field,
       ...(options.length ? { options } : {}),
-      ...(source ? { source } : {}),
+      ...(source || isEverifyProfileField(field) ? { source: 'everify' as const } : {}),
     })),
     waivers: raw.waivers.map(({ amount, ...waiver }) => ({
       ...waiver,
