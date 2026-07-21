@@ -218,7 +218,7 @@ export const FEATURES: Feature[] = [
     slug: 'lgu-onboarding',
     name: 'LGU registration',
     owner: 'Elton',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Register a real LGU against the PSA geographic reference, then land on its empty service dashboard.',
     dependsOn: ['egov-sso'],
@@ -231,7 +231,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-pay',
     name: 'Fee assessment & payment',
     owner: 'Elton',
-    status: 'todo',
+    status: 'ready',
     summary:
       'Applies waivers, then charges the configured fee through eGovPay. A named stage in the core flow — cannot be dropped.',
     dependsOn: [],
@@ -257,7 +257,7 @@ export const FEATURES: Feature[] = [
     slug: 'emessage',
     name: 'SMS notification',
     owner: 'Elton',
-    status: 'building',
+    status: 'ready',
     summary:
       '"Your clearance is ready" — removes the return trip to the hall. Cleanest impact story in the project.',
     dependsOn: ['doc-issuance'],

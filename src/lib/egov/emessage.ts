@@ -1,57 +1,57 @@
 import 'server-only'
-import { callEgov, egovFetch, type EgovResult } from './client'
-
-/**
- * eMessage — SMS notification.
- *
- *   POST {base}/messaging/v1/sms/push
- *
- * Small integration, cleanest impact story in the project: "your barangay
- * clearance is approved and ready for download" removes a return trip to the
- * hall. For someone taking two jeepney rides and losing half a day's wage to
- * check whether a document is ready, that message IS the product.
- */
+import { authHeaders, callEgov, egovFetch, type EgovResult } from './client'
 
 export type SmsResult = { messageId: string | null; accepted: boolean }
+
+/** Normalize Philippine mobile input to the eMessage-required E.164 format. */
+export function normalizeMobile(input: string): string {
+  const compact = input.trim().replace(/[\s()-]/g, '')
+  const digits = compact.replace(/^\+/, '')
+  let national: string
+
+  if (/^09\d{9}$/.test(digits)) national = digits.slice(1)
+  else if (/^9\d{9}$/.test(digits)) national = digits
+  else if (/^639\d{9}$/.test(digits)) national = digits.slice(2)
+  else throw new Error('Enter a valid Philippine mobile number')
+
+  return `+63${national}`
+}
+
+/** The sole boundary between provider payload variants and the app's SMS type. */
+export function normalizeSms(raw: Record<string, unknown>): SmsResult {
+  const data = (raw.data ?? raw) as Record<string, unknown>
+  const message = String(data.message ?? '').toLowerCase()
+  const status = String(data.status ?? '').toLowerCase()
+  return {
+    messageId: data.message_id ?? data.messageId ?? data.id ? String(data.message_id ?? data.messageId ?? data.id) : null,
+    accepted: data.success === false ? false : !['failed', 'error', 'rejected'].includes(status) && !message.includes('failed'),
+  }
+}
 
 export async function pushSms(
   mobile: string,
   message: string,
 ): Promise<EgovResult<SmsResult>> {
+  const number = normalizeMobile(mobile)
+  if (!message.trim()) throw new Error('SMS message is required')
+
   return callEgov(
     'EMESSAGE',
     async () => {
-      const key = process.env.EGOV_EMESSAGE_API_KEY
-      const raw = await egovFetch<Record<string, any>>(
-        'EMESSAGE',
-        '/messaging/v1/sms/push',
-        {
-          method: 'POST',
-          headers: key ? { Authorization: `Bearer ${key}`, 'x-api-key': key } : {},
-          body: JSON.stringify({ mobile_number: normalizeMobile(mobile), message }),
-        },
-      )
-
-      const d = raw.data ?? raw
-      return {
-        messageId: d.messageId ?? d.message_id ?? d.id ?? null,
-        accepted: d.success ?? (d.status ? d.status === 'success' : true),
-      }
+      const token = process.env.EGOV_EMESSAGE_API_TOKEN
+      if (!token) throw new Error('EGOV_EMESSAGE_API_TOKEN is not set')
+      const raw = await egovFetch<Record<string, unknown>>('EMESSAGE', '/messaging/v1/sms/push', {
+        method: 'POST',
+        headers: authHeaders('EMESSAGE', token),
+        body: JSON.stringify({ number, message }),
+      })
+      return normalizeSms(raw)
     },
     () => {
-      console.log(`[emessage:mock] → ${mobile}: ${message}`)
+      console.log(`[emessage:mock] → ${number}: ${message}`)
       return { messageId: 'mock-message-id', accepted: true }
     },
   )
-}
-
-/** PH mobile numbers arrive as 09xx, +639xx, or 639xx. Normalize to 639xxxxxxxxx. */
-function normalizeMobile(input: string): string {
-  const digits = input.replace(/\D/g, '')
-  if (digits.startsWith('63')) return digits
-  if (digits.startsWith('0')) return `63${digits.slice(1)}`
-  if (digits.startsWith('9')) return `63${digits}`
-  return digits
 }
 
 export function issuedSmsBody(serviceName: string, controlNumber: string, url: string) {
