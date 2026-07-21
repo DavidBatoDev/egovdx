@@ -75,10 +75,21 @@ export async function verifyDraftIdentity(id: string, citizen: Session, sessionI
     faceLivenessSessionId: sessionId,
   })
   if (result.source === 'fallback' || !result.data.verified) throw new Error('IDENTITY_NOT_VERIFIED')
-  const payload = { ...result.data, source: result.source, ssoAddress: citizen.address ?? '' }
+  // eVerify is authoritative for the match, but sandbox/profile responses can
+  // omit demographic attributes that are already present in the signed eGovPH
+  // session. Preserve those values so an eVerify-backed form never renders
+  // blank date-of-birth or address fields after a successful verification.
+  const identity = {
+    ...result.data,
+    fullName: result.data.fullName || citizen.name,
+    birthdate: result.data.birthdate || citizen.birthdate || citizen.birthDate || '',
+    address: result.data.address || citizen.address || '',
+    mobile: result.data.mobile || citizen.mobile,
+  }
+  const payload = { ...identity, source: result.source, ssoAddress: citizen.address ?? '' }
   const { error } = await supabaseAdmin().from('requests').update({
-    citizen_name: result.data.fullName || citizen.name,
-    citizen_mobile: result.data.mobile ?? citizen.mobile,
+    citizen_name: identity.fullName,
+    citizen_mobile: identity.mobile,
     everify_payload: payload,
     everify_reference: result.data.philsysReference,
     liveness_session: sessionId,
@@ -87,7 +98,7 @@ export async function verifyDraftIdentity(id: string, citizen: Session, sessionI
   }).eq('id', request.id).eq('citizen_sub', citizen.sub).eq('status', 'draft')
   if (error) throw new Error(error.message)
   await recordEvent(id, 'citizen', 'identity_verified', { source: result.source, reference: result.data.philsysReference })
-  return { identity: result.data, source: result.source }
+  return { identity, source: result.source }
 }
 
 export async function saveDraftForm(id: string, citizenSub: string, formData: unknown) {

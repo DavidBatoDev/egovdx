@@ -326,7 +326,7 @@ export function Tabs({ items, active }: { items: { href: string; label: string }
 }
 
 export function Stepper({ steps, current }: { steps: string[]; current: number }) {
-  return <ol aria-label="Application progress" className="grid gap-2 sm:grid-cols-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? 'step' : undefined} className={cn('rounded-sm border px-3 py-2 text-xs font-bold', index < current ? 'border-brand bg-brand-soft text-brand' : index === current ? 'border-brand bg-brand text-white' : 'border-border text-muted')}><span className="mr-1">{index + 1}.</span>{step}</li>)}</ol>
+  return <ol aria-label="Application progress" className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 sm:grid-cols-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? 'step' : undefined} className={cn('min-w-0 break-words rounded-sm border px-3 py-2 text-xs font-bold', index < current ? 'border-brand bg-brand-soft text-brand' : index === current ? 'border-brand bg-brand text-white' : 'border-border text-muted')}><span className="mr-1">{index + 1}.</span>{step}</li>)}</ol>
 }
 
 export function FileUpload(props: ComponentProps<'input'>) {

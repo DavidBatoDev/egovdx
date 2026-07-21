@@ -113,9 +113,8 @@ export default async function RootLayout({
 
         <footer className="bg-surface-footer">
           <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-white/60">
-            DICT · eGovPH · eSee LGU — a DICT-funded configuration layer for eGovPH.
-            Services publish only after automated validation, with flagged submissions
-            routed to a human reviewer.
+            DICT · eGovPH · eSee LGU — local government services online, from your
+            barangay to your phone. Every service is reviewed by DICT before it goes live.
           </div>
         </footer>
       </body>

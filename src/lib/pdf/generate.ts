@@ -180,9 +180,9 @@ export async function generateDocument(request: RequestWithService): Promise<Iss
 
   const payload = (request.everify_payload ?? {}) as Record<string, string>
   const verifiedFields: [string, string][] = [
-    ['Full Name', payload.full_name ?? citizenName],
-    ['Date of Birth', payload.birth_date ?? '—'],
-    ['Address', payload.full_address ?? payload.present_full_address ?? '—'],
+    ['Full Name', payload.full_name ?? payload.fullName ?? citizenName],
+    ['Date of Birth', payload.birth_date ?? payload.birthdate ?? payload.date_of_birth ?? '—'],
+    ['Address', payload.full_address ?? payload.present_full_address ?? payload.address ?? '—'],
   ]
   for (const [label, value] of verifiedFields) {
     page.drawText(`${label}:`, { x: margin, y, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2) })
@@ -346,7 +346,7 @@ export async function generateDocument(request: RequestWithService): Promise<Iss
 function extractCitizenName(request: RequestWithService): string {
   if (request.citizen_name) return request.citizen_name
   const p = (request.everify_payload ?? {}) as Record<string, string>
-  return p.full_name ?? 'Unknown Citizen'
+  return p.full_name ?? p.fullName ?? 'Unknown Citizen'
 }
 
 type DrawLine = { text: string; size?: number; bold?: boolean }

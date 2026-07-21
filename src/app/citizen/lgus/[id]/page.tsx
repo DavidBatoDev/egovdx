@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { CitizenShell } from '@/components/shell/citizen-shell'
 import { LguSiteRenderer } from '@/components/lgu-site/site-renderer'
+import { CitizenShell } from '@/components/shell/citizen-shell'
 import { listPublishedServices } from '@/lib/data'
 import { getPublishedLguSite } from '@/lib/lgu-site/data'
 import { DEFAULT_LGU_SITE_CONFIG } from '@/lib/lgu-site/schema'
