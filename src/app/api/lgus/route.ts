@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireRole } from '@/lib/auth/session'
+import { createSessionCookie, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/session'
 import { getPsgcEntry } from '@/lib/psgc'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
@@ -56,7 +57,11 @@ export async function POST(req: NextRequest) {
       .single()
     if (error) throw new Error(error.message)
 
-    return NextResponse.json({ id: lgu.id }, { status: 201 })
+    const { error: bindError } = await db.from('officers').update({ lgu_id: lgu.id }).eq('egov_sub', officer.sub).eq('role', 'officer')
+    if (bindError) throw new Error(bindError.message)
+    const response = NextResponse.json({ id: lgu.id }, { status: 201 })
+    response.cookies.set(SESSION_COOKIE, await createSessionCookie({ ...officer, lguId: lgu.id }), sessionCookieOptions())
+    return response
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     const status = message === 'UNAUTHENTICATED' ? 401 : message === 'FORBIDDEN' ? 403 : 500

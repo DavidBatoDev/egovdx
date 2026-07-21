@@ -10,6 +10,44 @@
  * than FAILED, because on a parallel build "not written yet" and "broken" are
  * different problems and conflating them makes the report useless.
  */
+import { config } from 'dotenv'
+import { createClient } from '@supabase/supabase-js'
+import { SignJWT } from 'jose'
+
+config({ path: '.env.local', quiet: true })
+
+const ELTON_QA_SERVICE = 'cccccccc-0000-0000-0000-000000000001'
+function qaDb() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase QA credentials missing')
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+}
+async function seedEltonRequest(id, feeStatus = 'unpaid') {
+  const db = qaDb()
+  await cleanupEltonRequest(id)
+  const { error } = await db.from('requests').insert({ id, lgu_service_id: ELTON_QA_SERVICE, citizen_sub: 'demo-citizen-sub', citizen_name: `QA Citizen ${id.slice(-2)}`, citizen_mobile: '+639171234567', everify_payload: { full_name: 'QA Citizen', reference: `EV-${id.slice(-4)}` }, everify_reference: `EV-${id.slice(-4)}`, liveness_passed: true, liveness_score: 98.5, form_data: { purpose: 'Employment' }, status: 'submitted', fee_due: 50, fee_status: feeStatus })
+  if (error) throw new Error(error.message)
+}
+async function cleanupEltonRequest(id) {
+  const db = qaDb()
+  const { data } = await db.from('requests').select('pdf_path').eq('id', id).maybeSingle()
+  if (data?.pdf_path) await db.storage.from('documents').remove([data.pdf_path])
+  await db.from('request_events').delete().eq('request_id', id)
+  await db.from('requests').delete().eq('id', id)
+}
+async function setQaSession(page, baseUrl, role) {
+  if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET missing')
+  const officer = role === 'officer'
+  const token = await new SignJWT({
+    sub: officer ? 'demo-officer-sub' : 'demo-citizen-sub',
+    name: officer ? 'Maria Santos' : 'Demo Citizen',
+    role,
+    lguId: officer ? '22222222-2222-2222-2222-222222222222' : null,
+    mobile: '+639171234567',
+  }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h')
+    .sign(new TextEncoder().encode(process.env.SESSION_SECRET))
+  const origin = new URL(baseUrl)
+  await page.context().addCookies([{ name: 'egovdx_session', value: token, domain: origin.hostname, path: '/', httpOnly: true, sameSite: 'Lax', secure: origin.protocol === 'https:' }])
+}
 
 /**
  * @typedef {object} Ctx
@@ -160,6 +198,60 @@ export const flows = [
       await page.getByRole('button', { name: /^search$/i }).click()
       await shot('lgu-registration-search')
       return 'registration route and PSA search reachable'
+    },
+  },
+
+  {
+    id: 'elton-payment',
+    name: 'eGOV PAY — citizen completes a mock payment safely',
+    owner: 'Elton',
+    async run({ page, baseUrl, shot }) {
+      const id = 'eeeeeeee-1000-0000-0000-000000000001'
+      await seedEltonRequest(id)
+      try {
+        await setQaSession(page, baseUrl, 'citizen')
+        await visit(page, `${baseUrl}/pay/${id}`)
+        await page.getByRole('heading', { name: /barangay clearance/i }).waitFor({ timeout: 15_000 })
+        await page.getByRole('button', { name: /assess fee/i }).click()
+        await page.getByText(/mock data/i).waitFor()
+        await page.getByRole('button', { name: /confirm mock payment/i }).click()
+        await page.getByText(/ready for officer review/i).waitFor()
+        await shot('elton-payment-complete')
+        return 'payment created and reconciled once'
+      } finally { await cleanupEltonRequest(id) }
+    },
+  },
+
+  {
+    id: 'elton-approval',
+    name: 'Approval queue — officer issues, anchors, and notifies in one click',
+    owner: 'Elton',
+    async run({ page, baseUrl, shot }) {
+      const id = 'eeeeeeee-1000-0000-0000-000000000002'
+      await seedEltonRequest(id, 'paid')
+      try {
+        await setQaSession(page, baseUrl, 'officer')
+        await visit(page, `${baseUrl}/console/requests`)
+        const row = page.locator('article').filter({ hasText: 'QA Citizen 02' })
+        await row.getByRole('button', { name: /approve and issue/i }).click()
+        await row.getByText('Issued').waitFor({ timeout: 30_000 })
+        await row.getByText(/mock data/i).waitFor()
+        await shot('elton-approved-issued')
+        return 'PDF, chain attempt, and SMS completed'
+      } finally { await cleanupEltonRequest(id) }
+    },
+  },
+
+  {
+    id: 'elton-analytics',
+    name: 'LGU analytics — officer sees scoped operational metrics',
+    owner: 'Elton',
+    async run({ page, baseUrl, shot }) {
+      await setQaSession(page, baseUrl, 'officer')
+      await visit(page, `${baseUrl}/console/analytics`)
+      await page.getByRole('heading', { name: /service analytics/i }).waitFor()
+      await shot('elton-analytics')
+      return 'LGU-scoped analytics rendered'
     },
   },
 

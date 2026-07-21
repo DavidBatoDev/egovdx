@@ -231,7 +231,7 @@ export const FEATURES: Feature[] = [
     slug: 'egov-pay',
     name: 'Fee assessment & payment',
     owner: 'Elton',
-    status: 'ready',
+    status: 'unified',
     summary:
       'Applies waivers, then charges the configured fee through eGovPay. A named stage in the core flow — cannot be dropped.',
     dependsOn: [],
@@ -244,7 +244,7 @@ export const FEATURES: Feature[] = [
     slug: 'approval-queue',
     name: 'Officer approval queue',
     owner: 'Elton',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Requests routed to the office the service names. Approving triggers issuance, anchoring, and the SMS.',
     dependsOn: ['egov-sso'],
@@ -257,7 +257,7 @@ export const FEATURES: Feature[] = [
     slug: 'emessage',
     name: 'SMS notification',
     owner: 'Elton',
-    status: 'ready',
+    status: 'unified',
     summary:
       '"Your clearance is ready" — removes the return trip to the hall. Cleanest impact story in the project.',
     dependsOn: ['doc-issuance'],
@@ -270,7 +270,7 @@ export const FEATURES: Feature[] = [
     slug: 'analytics',
     name: 'Live service analytics',
     owner: 'Elton',
-    status: 'todo',
+    status: 'unified',
     summary:
       'Per-service volume, completion rate, and time-to-issue for the LGU department head. CUTTABLE if time runs short.',
     dependsOn: ['approval-queue', 'brandkit'],

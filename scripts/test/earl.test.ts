@@ -11,6 +11,7 @@ import { config } from 'dotenv'
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { strict as assert } from 'node:assert'
+import { SignJWT } from 'jose'
 import { controlNumber, shortHash } from '../../src/lib/format'
 
 config({ path: '.env.local' })
@@ -20,6 +21,7 @@ const BASE = process.env.QA_BASE_URL ?? 'http://localhost:3000'
 type Result = { name: string; ok: boolean; error?: string; ms: number }
 
 const results: Result[] = []
+let officerCookie = ''
 
 async function test(name: string, fn: () => Promise<void> | void) {
   const started = Date.now()
@@ -38,7 +40,7 @@ async function test(name: string, fn: () => Promise<void> | void) {
 async function jsonPost(path: string, body: unknown) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Cookie: officerCookie },
     body: JSON.stringify(body),
   })
   const text = await res.text()
@@ -99,12 +101,18 @@ async function seedApprovedRequest() {
 
 async function cleanupTestRequest() {
   const db = supabase()
-  await db.storage.from('documents').remove([`${TEST_REQUEST_ID}.pdf`])
+  const { data: request } = await db.from('requests').select('pdf_path').eq('id', TEST_REQUEST_ID).maybeSingle()
+  if (request?.pdf_path) await db.storage.from('documents').remove([request.pdf_path])
   await db.from('request_events').delete().eq('request_id', TEST_REQUEST_ID)
   await db.from('requests').delete().eq('id', TEST_REQUEST_ID)
 }
 
 async function main() {
+  const secret = process.env.SESSION_SECRET
+  if (!secret) throw new Error('SESSION_SECRET missing')
+  const token = await new SignJWT({ sub: 'demo-officer-sub', name: 'Maria Santos', role: 'officer', lguId: '22222222-2222-2222-2222-222222222222', mobile: '+639171234567' })
+    .setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h').sign(new TextEncoder().encode(secret))
+  officerCookie = `egovdx_session=${token}`
   console.log(`\nEarl tests — ${BASE}\n`)
 
   // ── unit: format helpers ──────────────────────────────────────────────────
@@ -154,11 +162,9 @@ async function main() {
     const { status, data } = await jsonPost('/api/issue', { requestId: TEST_REQUEST_ID })
     assert.equal(status, 200, JSON.stringify(data))
     const body = data as Record<string, unknown>
-    assert.equal(body.ok, true)
-    assert.ok(typeof body.hash === 'string' && (body.hash as string).length === 64)
+    assert.equal(body.status, 'issued')
     assert.ok(typeof body.controlNumber === 'string')
     assert.ok(typeof body.verifyUrl === 'string')
-    issuedHash = body.hash as string
     issuedControl = body.controlNumber as string
   })
 
@@ -171,14 +177,16 @@ async function main() {
       .single()
     if (error) throw new Error(error.message)
     assert.equal(data.status, 'issued')
-    assert.equal(data.doc_hash, issuedHash)
+    assert.ok(typeof data.doc_hash === 'string' && data.doc_hash.length === 64)
+    issuedHash = data.doc_hash
     assert.equal(data.control_number, issuedControl)
     assert.ok(data.chain_tx)
   })
 
-  await test('POST /api/issue rejects already-issued request (422)', async () => {
-    const { status } = await jsonPost('/api/issue', { requestId: TEST_REQUEST_ID })
-    assert.equal(status, 422)
+  await test('POST /api/issue returns the existing issuance idempotently', async () => {
+    const { status, data } = await jsonPost('/api/issue', { requestId: TEST_REQUEST_ID })
+    assert.equal(status, 200)
+    assert.equal((data as Record<string, unknown>).controlNumber, issuedControl)
   })
 
   await test('GET /api/issue/download returns PDF', async () => {

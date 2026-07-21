@@ -8,6 +8,7 @@
 
 drop table if exists request_events   cascade;
 drop table if exists requests         cascade;
+drop table if exists lgu_control_sequences cascade;
 drop table if exists validation_flags cascade;
 drop table if exists studio_generation_cache cascade;
 drop table if exists lgu_services     cascade;
@@ -39,6 +40,7 @@ create table officers (
   lgu_id     uuid references lgus(id) on delete cascade,
   full_name  text not null,
   position   text,
+  office     text,
   role       text not null default 'officer' check (role in ('officer','reviewer')),
   created_at timestamptz not null default now()
 );
@@ -143,16 +145,50 @@ create table requests (
                    check (fee_status in ('unpaid','waived','paid')),
   waiver_applied   text,
   payment_ref      text,
+  payment_uuid     text,
+  payment_url      text,
+  payment_txnid    text,
+  payment_source   text check (payment_source is null or payment_source in ('live','mock','fallback')),
+  payment_checked_at timestamptz,
+  uploaded_docs    jsonb not null default '[]'::jsonb,
+  liveness_score   numeric(5,2),
+  everify_reference text,
+  approved_by      text,
+  approved_at      timestamptz,
+  rejected_by      text,
+  rejected_at      timestamptz,
+  rejection_note   text,
+  issuance_status  text not null default 'not_started'
+                   check (issuance_status in ('not_started','processing','failed','issued')),
+  issuance_attempts integer not null default 0,
+  issuance_started_at timestamptz,
+  issuance_error   text,
   control_number   text unique,
   pdf_path         text,
   doc_hash         text unique,         -- sha256 of the issued PDF; the QR resolves this
   chain_tx         text,
+  chain_source     text check (chain_source is null or chain_source in ('live','mock','fallback')),
+  sms_status       text not null default 'not_sent'
+                   check (sms_status in ('not_sent','sending','sent','failed','unknown')),
+  sms_source       text check (sms_source is null or sms_source in ('live','mock','fallback')),
+  sms_message_id   text,
+  sms_sent_at      timestamptz,
+  sms_error        text,
   issued_at        timestamptz,
   created_at       timestamptz not null default now()
 );
 create index on requests(lgu_service_id);
 create index on requests(status);
 create index on requests(doc_hash);
+create index on requests(payment_uuid);
+
+create table lgu_control_sequences (
+  lgu_id uuid not null references lgus(id) on delete cascade,
+  year integer not null,
+  last_value bigint not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (lgu_id, year)
+);
 
 -- ------------------------------------------------------- request_events
 -- Append-only audit trail. Cheap to write, and it's what makes "we did not
@@ -166,3 +202,40 @@ create table request_events (
   created_at timestamptz not null default now()
 );
 create index on request_events(request_id, created_at);
+
+create or replace function claim_request_approval(
+  p_request_id uuid,
+  p_officer_sub text
+)
+returns table (claimed boolean, reason text, sequence_value bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_request requests%rowtype;
+  v_officer officers%rowtype;
+  v_service lgu_services%rowtype;
+  v_sequence bigint;
+begin
+  select * into v_officer from officers where egov_sub = p_officer_sub and role = 'officer';
+  if not found then return query select false, 'FORBIDDEN', null::bigint; return; end if;
+  select * into v_request from requests where id = p_request_id for update;
+  if not found then return query select false, 'NOT_FOUND', null::bigint; return; end if;
+  select * into v_service from lgu_services where id = v_request.lgu_service_id;
+  if v_officer.lgu_id is null or v_officer.lgu_id <> v_service.lgu_id then return query select false, 'WRONG_LGU', null::bigint; return; end if;
+  if v_officer.office is not null and trim(v_officer.office) <> '' and lower(trim(v_officer.office)) <> lower(trim(coalesce(v_service.approval_office, ''))) then return query select false, 'WRONG_OFFICE', null::bigint; return; end if;
+  if not v_request.liveness_passed or coalesce(v_request.liveness_score, 95) < 95 then return query select false, 'LIVENESS_REQUIRED', null::bigint; return; end if;
+  if v_request.fee_status not in ('paid','waived') then return query select false, 'PAYMENT_REQUIRED', null::bigint; return; end if;
+  if v_request.status = 'issued' then return query select false, 'ALREADY_ISSUED', null::bigint; return; end if;
+  if v_request.status not in ('submitted','approved') then return query select false, 'NOT_APPROVABLE', null::bigint; return; end if;
+  if v_request.issuance_status = 'processing' and coalesce(v_request.issuance_started_at, now()) > now() - interval '5 minutes' then return query select false, 'IN_PROGRESS', null::bigint; return; end if;
+  if v_request.control_number is null then
+    insert into lgu_control_sequences (lgu_id, year, last_value) values (v_service.lgu_id, extract(year from now())::integer, 1)
+    on conflict (lgu_id, year) do update set last_value = lgu_control_sequences.last_value + 1, updated_at = now()
+    returning last_value into v_sequence;
+  end if;
+  update requests set status = 'approved', approved_by = coalesce(approved_by, p_officer_sub), approved_at = coalesce(approved_at, now()), issuance_status = 'processing', issuance_started_at = now(), issuance_attempts = issuance_attempts + 1, issuance_error = null where id = p_request_id;
+  return query select true, 'CLAIMED', v_sequence;
+end;
+$$;

@@ -92,7 +92,7 @@ export async function generatePayment(
           amount,
           settlement_template_uuid: process.env.EGOV_PAY_SETTLEMENT_TEMPLATE_UUID,
           txnid,
-          redirect_url: `${appUrl()}/track/${encodeURIComponent(txnid)}`,
+          redirect_url: `${appUrl()}/pay/${encodeURIComponent(txnid)}?returned=1`,
           callback_url: `${appUrl()}/api/pay/callback`,
           digest,
           currency: 'PHP',

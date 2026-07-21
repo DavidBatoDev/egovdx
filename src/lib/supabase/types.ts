@@ -12,6 +12,9 @@ export type ServiceStatus = 'draft' | 'flagged' | 'published' | 'rejected'
 export type FlagSeverity = 'info' | 'warn' | 'block'
 export type RequestStatus = 'submitted' | 'approved' | 'rejected' | 'issued'
 export type FeeStatus = 'unpaid' | 'waived' | 'paid'
+export type ProviderSource = 'live' | 'mock' | 'fallback'
+export type IssuanceStatus = 'not_started' | 'processing' | 'failed' | 'issued'
+export type SmsStatus = 'not_sent' | 'sending' | 'sent' | 'failed' | 'unknown'
 
 /** A single field in a citizen-facing form, stored in lgu_services.form_fields. */
 export type FormField = {
@@ -77,6 +80,7 @@ export type Officer = {
   lgu_id: string | null
   full_name: string
   position: string | null
+  office: string | null
   role: OfficerRole
   created_at: string
 }
@@ -163,14 +167,31 @@ export type ServiceRequest = {
   payment_uuid: string | null
   payment_url: string | null
   payment_txnid: string | null
+  payment_source: ProviderSource | null
+  payment_checked_at: string | null
   uploaded_docs: string[]
   /** Liveness confidence out of 100. We accept only >= 95.0. */
   liveness_score: number | null
   everify_reference: string | null
+  approved_by: string | null
+  approved_at: string | null
+  rejected_by: string | null
+  rejected_at: string | null
+  rejection_note: string | null
+  issuance_status: IssuanceStatus
+  issuance_attempts: number
+  issuance_started_at: string | null
+  issuance_error: string | null
   control_number: string | null
   pdf_path: string | null
   doc_hash: string | null
   chain_tx: string | null
+  chain_source: ProviderSource | null
+  sms_status: SmsStatus
+  sms_source: ProviderSource | null
+  sms_message_id: string | null
+  sms_sent_at: string | null
+  sms_error: string | null
   issued_at: string | null
   created_at: string
 }
@@ -228,7 +249,7 @@ export type Database = {
         Update: Partial<PsgcEntry>
         Relationships: []
       }
-      officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'role'>>
+      officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'office' | 'role'>>
       service_templates: Table<
         ServiceTemplate,
         Insertable<ServiceTemplate, 'description' | 'base_fields' | 'allowed_rules' | 'max_fee'>
@@ -282,17 +303,40 @@ export type Database = {
           | 'payment_uuid'
           | 'payment_url'
           | 'payment_txnid'
+          | 'payment_source'
+          | 'payment_checked_at'
           | 'uploaded_docs'
           | 'liveness_score'
           | 'everify_reference'
+          | 'approved_by'
+          | 'approved_at'
+          | 'rejected_by'
+          | 'rejected_at'
+          | 'rejection_note'
+          | 'issuance_status'
+          | 'issuance_attempts'
+          | 'issuance_started_at'
+          | 'issuance_error'
           | 'control_number'
           | 'pdf_path'
           | 'doc_hash'
           | 'chain_tx'
+          | 'chain_source'
+          | 'sms_status'
+          | 'sms_source'
+          | 'sms_message_id'
+          | 'sms_sent_at'
+          | 'sms_error'
           | 'issued_at'
         >
       >
       request_events: Table<RequestEvent, Insertable<RequestEvent, 'payload'>>
+      lgu_control_sequences: {
+        Row: { lgu_id: string; year: number; last_value: number; updated_at: string }
+        Insert: { lgu_id: string; year: number; last_value?: number; updated_at?: string }
+        Update: { last_value?: number; updated_at?: string }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -303,6 +347,10 @@ export type Database = {
       publish_reviewed_service: {
         Args: { p_service_id: string; p_reviewer: string }
         Returns: ServiceStatus
+      }
+      claim_request_approval: {
+        Args: { p_request_id: string; p_officer_sub: string }
+        Returns: { claimed: boolean; reason: string; sequence_value: number | null }[]
       }
     }
     Enums: Record<string, never>

@@ -20,7 +20,7 @@ export default async function OfficerConsole({ searchParams }: { searchParams: P
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Officer console" title={lgu.name} description={`${active.length} active eServices`} action={<ButtonLink href="/console/register" variant="secondary">Register another LGU</ButtonLink>} />
+      <PageHeader eyebrow="Officer console" title={lgu.name} description={`${active.length} active eServices`} action={<div className="flex flex-wrap gap-2"><ButtonLink href="/console/requests" variant="secondary">Approval queue</ButtonLink><ButtonLink href="/console/analytics" variant="secondary">Analytics</ButtonLink><ButtonLink href="/console/register" variant="secondary">Register another LGU</ButtonLink></div>} />
       <Card>
         <CardHeader title="Active eServices" />
         <CardBody className="p-0">
