@@ -77,7 +77,42 @@ Response · 200 OK:
 }
 ```
 
-**Note on `exchange_code`:** this reference doesn't prescribe how you obtain the exchange code — the SSO Widget (`integrations/egovph.md`) is one way to get one from a browser-based login, but any front-end flow that ends in a valid `exchange_code` works here. That widget's setup guide isn't reproduced in this file since it's a UI concern, not part of the token/profile contract.
+**Note on `exchange_code`:** the contract above doesn't care how you obtained the code — the SSO Widget is one browser-based way, but any front-end flow ending in a valid `exchange_code` works. The widget's setup guide isn't reproduced here because it's a UI concern, not part of the token/profile contract.
+
+#### Getting a test `exchange_code` without any front-end
+
+The eGovPH developer portal has a **"Generate an eGov exchange code"** panel on the eGov SSO page:
+
+- **Partner code** — accepts a literal value or a `{{partner_code}}` variable reference
+- **Test account** — a dropdown of test identities (e.g. `josie@yopmail.com`)
+- **Generate** — mints a single-use exchange code for that partner + identity
+
+This is how you test the server-side flow end to end with no widget, no portal element and no client ID. Generate a code, paste it into the app's callback, exchange it. Codes are single-use and short-lived, so mint a fresh one per attempt — a second run with the same code returns **422**.
+
+#### What the access token tells you
+
+The returned `access_token` is a readable JWT. Decoding the sample response gives:
+
+```json
+{
+  "iss": "https://stg-superapp-sso.oueg.info",
+  "scope": "SSO_AUTHENTICATION",
+  "pc": "TEST_AGENCY",
+  "jti": "MVPCBEUVCGPZR",
+  "iat": 1783397412,
+  "exp": 1783401012
+}
+```
+
+Three things worth knowing:
+
+- **`iss` identifies the issuing SSO service**, not necessarily the host you call. The sample shows `https://stg-superapp-sso.oueg.info`, while the hackathon `base_url` we were issued is `https://hackathon-sso.e.gov.ph` — the hackathon endpoint fronts the same staging service. **Do not change `EGOV_SSO_BASE_URL` to match `iss`.** Useful only for confirming which environment answered.
+- **`pc` is the partner code** that minted it (`TEST_AGENCY` for the test partner).
+- **`jti` equals the profile's `uniqid`.** In the sample pair, the token's `jti` and the SSO Authentication response's `data.uniqid` are both `MVPCBEUVCGPZR` — so the subject is readable from the token itself. Still prefer `data.uniqid` from the profile call as the canonical subject; treat the `jti` match as a debugging aid, not a contract.
+
+**Lifetime is 60 minutes** (`exp - iat` = 3600s). The token response carries **no `expires_in` field**, so a caching layer must either decode `exp` or assume 3600. `getAccessToken()` in `src/lib/egov/client.ts` currently defaults to 3600, which matches — but decoding `exp` is the more durable choice if the lifetime ever changes.
+
+Responses are rate limited (`x-ratelimit-limit: 1000`).
 
 ### SSO Authentication
 

@@ -58,6 +58,38 @@ Authorization: Bearer <access_token>          ← NO REQUEST BODY
               barangay_code, municipality_code, region_code, province_code } }
 ```
 
+### How to get a test `exchange_code` — you are not blocked
+
+This was the open question in your brief. It's answered: **the eGovPH developer
+portal mints exchange codes for you.** On the eGov SSO page there's a panel
+called **"Generate an eGov exchange code"**:
+
+1. Enter the **partner code** (literal, or `{{partner_code}}`)
+2. Pick a **test account** from the dropdown — `josie@yopmail.com`
+3. Hit **Generate**
+
+Paste the result into your callback and exchange it. No widget, no portal
+element, no client ID, no browser flow needed to test the whole server-side
+chain. **Mint a fresh code per attempt** — they're single-use, and reusing one
+returns `422`, which looks like a credentials bug but isn't.
+
+### What the returned token tells you
+
+The `access_token` is a readable JWT. From the documented sample:
+
+- `iss` → `https://stg-superapp-sso.oueg.info`, the issuing service. **This is not
+  your `base_url`** — ours is `https://hackathon-sso.e.gov.ph`, which fronts the
+  same staging service. Don't "fix" `EGOV_SSO_BASE_URL` to match `iss`; it's only
+  useful for confirming which environment answered.
+- `pc` → the partner code that minted it (`TEST_AGENCY` for the test partner)
+- `jti` → **equals the profile's `uniqid`** (`MVPCBEUVCGPZR` in both)
+- lifetime is **60 minutes**, and the response carries **no `expires_in`**
+
+That last one matters for you: `getAccessToken()` in `client.ts` defaults to
+3600s, which happens to be correct — but decoding `exp` is sturdier. Keep taking
+the canonical subject from `data.uniqid` on the profile call; the `jti` match is
+a debugging convenience, not a contract to rely on.
+
 Use `EGOV_SSO_PARTNER_CODE` and `EGOV_SSO_PARTNER_SECRET` in the token request;
 they must never reach the browser. The SSO Authentication request has **no
 body**. `data.uniqid` is the subject — it is what `officers.egov_sub` matches
