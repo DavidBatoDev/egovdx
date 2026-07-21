@@ -155,6 +155,21 @@ export const flows = [
   },
 
   {
+    id: 'signin',
+    name: 'Sign in — citizen LGU discovery is the primary journey',
+    owner: 'Jasmin',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/signin`)
+      await page.getByRole('heading', { name: /your lgu services/i }).waitFor()
+      await page.getByRole('link', { name: /browse my lgu/i }).waitFor()
+      await page.getByRole('link', { name: /lgu officer/i }).waitFor()
+      await page.getByRole('link', { name: /dict reviewer/i }).waitFor()
+      await shot('citizen-gateway')
+      return 'mobile LGU preview and all three access paths rendered'
+    },
+  },
+
+  {
     id: 'service-catalog',
     name: 'Citizen catalog — published services render',
     owner: 'Jasmin',
@@ -207,10 +222,8 @@ export const flows = [
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
     async run({ page, baseUrl, shot }) {
-      await visit(page, `${baseUrl}/`)
-      await page.getByRole('link', { name: /Citizen services/i }).first().click()
-      await page.waitForURL(/\/signin/)
-      await page.getByRole('link', { name: /continue as a citizen/i }).click()
+      await visit(page, `${baseUrl}/signin`)
+      await page.getByRole('link', { name: /browse my lgu|continue as a citizen/i }).click()
       await page.waitForLoadState('domcontentloaded')
       const url = page.url()
       if (url.includes('error=')) {
