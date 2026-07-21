@@ -1,15 +1,14 @@
 import { redirect } from 'next/navigation'
-import { ButtonLink, Card, CardBody, CardHeader, EmptyState, PageHeader } from '@/components/ui'
+import { ButtonLink, Card, CardBody, CardHeader, EmptyState, PageHeader, StatusBadge } from '@/components/ui'
 import { getSession } from '@/lib/auth/session'
 import { listServicesForLgu } from '@/lib/data'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
-export default async function OfficerConsole({ searchParams }: { searchParams: Promise<{ lgu?: string }> }) {
+export default async function OfficerConsole() {
   const session = await getSession()
   if (!session) redirect('/signin?next=/console')
   if (session.role !== 'officer') redirect('/')
-  const { lgu: registeredLguId } = await searchParams
-  const lguId = registeredLguId ?? session.lguId
+  const lguId = session.lguId
   if (!lguId) redirect('/console/register')
 
   const db = supabaseAdmin()
@@ -17,16 +16,18 @@ export default async function OfficerConsole({ searchParams }: { searchParams: P
   if (!lgu) redirect('/console/register')
   const services = await listServicesForLgu(lgu.id)
   const active = services.filter((service) => service.status === 'published')
+  const flagged = services.filter((service) => service.status === 'flagged')
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Officer console" title={lgu.name} description={`${active.length} active eServices`} action={<div className="flex flex-wrap gap-2"><ButtonLink href="/console/requests" variant="secondary">Approval queue</ButtonLink><ButtonLink href="/console/analytics" variant="secondary">Analytics</ButtonLink><ButtonLink href="/console/register" variant="secondary">Register another LGU</ButtonLink></div>} />
+      <PageHeader eyebrow="Officer console" title={lgu.name} description={`${active.length} active eServices · ${flagged.length} awaiting DICT review`} action={<div className="flex flex-wrap gap-2"><ButtonLink href="/console/studio">Create eService with AI</ButtonLink><ButtonLink href="/console/requests" variant="secondary">Approval queue</ButtonLink><ButtonLink href="/console/analytics" variant="secondary">Analytics</ButtonLink></div>} />
       <Card>
-        <CardHeader title="Active eServices" />
+        <CardHeader title="Configured eServices" description="Published services appear in the citizen catalog immediately; flagged services wait for DICT review." />
         <CardBody className="p-0">
-          {active.length === 0 ? <EmptyState title="0 active eServices" description="This LGU is registered and ready. Create a DICT-bounded service in the AI Studio to begin." /> : <ul className="divide-y divide-border">{active.map((service) => <li key={service.id} className="px-5 py-4 text-sm font-medium">{service.template.name}</li>)}</ul>}
+          {services.length === 0 ? <div className="space-y-4 pb-5 text-center"><EmptyState title="0 configured eServices" description="This LGU is registered and ready. Create a DICT-bounded service in the AI Studio to begin." /><ButtonLink href="/console/studio">Open AI Studio</ButtonLink></div> : <ul className="divide-y divide-border">{services.map((service) => <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div><p className="text-sm font-medium">{service.template.name}</p><p className="text-xs text-muted">{service.approval_office ?? 'LGU approval office'} · {service.required_docs.length} required document{service.required_docs.length === 1 ? '' : 's'}</p></div><div className="flex items-center gap-2"><StatusBadge status={service.status} />{service.status === 'published' ? <ButtonLink href={`/lgus/${lgu.id}`} variant="ghost">Citizen view</ButtonLink> : null}</div></li>)}</ul>}
         </CardBody>
       </Card>
+      <div className="flex justify-end"><ButtonLink href="/console/register" variant="ghost">Register a different LGU</ButtonLink></div>
     </div>
   )
 }

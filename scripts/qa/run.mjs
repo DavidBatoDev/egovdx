@@ -23,11 +23,12 @@ const ARTIFACT_DIR = 'qa-artifacts'
 const DEFAULT_SLOWMO = 800
 
 function parseArgs(argv) {
-  const args = { slowMo: DEFAULT_SLOWMO, headless: false, only: [] }
+  const args = { slowMo: DEFAULT_SLOWMO, headless: false, diagnostics: false, only: [] }
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--headless') args.headless = true
+    else if (a === '--diagnostics') args.diagnostics = true
     else if (a === '--slowmo') args.slowMo = Number(argv[++i])
     else if (a === '--base') args.baseUrl = argv[++i]
     else if (a === '--access') args.accessUrl = argv[++i]
@@ -61,7 +62,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const selected = args.only.length
     ? flows.filter((f) => args.only.includes(f.id))
-    : flows
+    : flows.filter((f) => args.diagnostics ? f.diagnostic === true : f.diagnostic !== true)
 
   if (selected.length === 0) {
     console.error(`No flows matched. Available: ${flows.map((f) => f.id).join(', ')}`)

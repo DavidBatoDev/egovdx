@@ -29,7 +29,9 @@ Remaining required work is certification only: run eGovPay with the issued
 `test_` token and run eMessage only against an approved
 `EGOV_EMESSAGE_TEST_NUMBER`. Switch the two production modes independently
 after their checks pass; never send money or a message to a real citizen during
-QA. There is no remaining Elton-owned application feature to build.
+QA. In live mode the adapter requires this value and routes the controlled proof
+to it instead of the request's citizen number. There is no remaining
+Elton-owned application feature to build.
 
 Jasmin's `/apply` and `/track` routes now consume Elton's payment and approval
 contracts end to end. They remain outside Elton's ownership, but the integration

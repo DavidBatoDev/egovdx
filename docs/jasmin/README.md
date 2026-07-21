@@ -9,9 +9,11 @@
 
 ## Current implementation status
 
-All three owned features are now `unified`. The shared brand kit includes the
-eSee LGU design system and citizen primitives; the dynamic eGovPH shell reads
-published LGU services without hardcoded localities; and `/apply/[serviceId]`
+All owned features are now `unified`. The finished decision-maker landing page
+is live at `/` with citizen, officer, and DICT reviewer entry points. The shared
+brand kit includes the eSee LGU design system and citizen primitives; the
+dynamic eGovPH shell reads published LGU services at `/services` without
+hardcoded localities; and `/apply/[serviceId]`
 supports resumable identity verification, arbitrary generated fields, private
 evidence uploads, fee or waiver completion, submission, and
 `/track/[requestId]`. The focused citizen integration suite passes 7/7 checks.

@@ -151,6 +151,11 @@ A feature graduates from harness to product when its status hits `ready`.
 5. **Leave the harness in place.** It costs nothing and it's the fastest way to
    debug one integration when the full flow misbehaves at 3 AM.
 
+Harnesses are diagnostics, not product navigation. The public landing at `/`
+must connect the citizen, officer, and reviewer journeys through real routes.
+`npm run qa` exercises those product journeys by default; use
+`npm run qa:diagnostics` when isolating `/implementation/*` adapters.
+
 `/implementation` also happens to be useful on camera: it shows each eGovPH
 integration firing individually, which is a cleaner way to evidence integration
 depth than narrating over a happy path. Integration is 30% of the score and

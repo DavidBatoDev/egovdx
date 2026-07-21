@@ -20,15 +20,17 @@ rendered from [`src/app/implementation/manifest.ts`](../src/app/implementation/m
 
 ## Current handoff — 22 July 2026
 
-All application features are implemented and wired into their production
-routes. The remaining work is integration certification and presentation, not
-new product construction.
+All application features are implemented and wired into one production journey.
+Jasmin's landing at `/` is the three-role gateway, citizens discover services at
+`/services`, and the officer, reviewer, citizen, issuance, and verification
+handoffs no longer depend on `/implementation`. The remaining work is live
+integration certification and presentation, not new product construction.
 
 | Owner | Delivered | Remaining required work |
 |---|---|---|
 | **David** | AI Studio, bounded validation, form extraction, DICT review, generation cache, persistence, Supabase/Vercel deployment | Run the authoritative seven-service probe with the final credentials; perform one controlled live eGov AI → OpenAI fallback test; switch `EGOV_AI_MODE` to `live` only after it passes; record remaining credits. |
-| **Joshua** | Server-side SSO exchange, role sessions, eVerify SDK liveness, standalone liveness adapter, eVerify request integration | Add the missing `/implementation/everify` harness; mint a fresh single-use exchange code and certify SSO → SDK liveness → eVerify once in live mode; map the returned officer `uniqid` before recording. |
-| **Jasmin** | Brand system, eGovPH citizen shell, dynamic LGU catalog, resumable application, private uploads, fee/waiver handoff, tracking | No remaining owned implementation work. Perform the final mobile/recording visual pass with the team. |
+| **Joshua** | Server-side SSO exchange, role sessions, eVerify SDK liveness, standalone liveness adapter, eVerify request integration, and the dedicated eVerify diagnostic harness | Mint a fresh single-use exchange code and certify SSO → SDK liveness → eVerify once in live mode; map the returned officer `uniqid` before recording. |
+| **Jasmin** | Public landing and role gateway, brand system, eGovPH citizen shell, dynamic `/services` catalog, resumable application, private uploads, fee/waiver handoff, tracking | No remaining owned implementation work. Perform the final mobile/recording visual pass with the team. |
 | **Earl** | PDF issuance, immutable storage, hash anchoring, block receipt/timestamp, public QR/hash verification and tamper rejection | No remaining owned implementation work. Keep the confirmed live-chain transaction available for the presentation. |
 | **Elton** | LGU onboarding, payment/waivers, approval/rejection, issuance orchestration, eMessage, retries and analytics | Run controlled live eGovPay with the test token and eMessage with an approved test number; change each production mode independently only after its proof succeeds. |
 
@@ -39,7 +41,7 @@ it is not the same as live certification.
 
 ### Shared finish line
 
-1. Run the full browser suite once after any mode change.
+1. Run the default product browser suite once after any mode change; run `npm run qa:diagnostics` only when isolating an adapter.
 2. Record the eight-minute presentation and one-minute reel using the final
    production deployment.
 3. Test the public URL, QR verification, and submission links in an incognito

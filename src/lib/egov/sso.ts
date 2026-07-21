@@ -82,6 +82,7 @@ function mockProfile(code: string): EgovProfile {
   }
   const personas: Record<string, EgovProfile> = {
     officer: { ...base, sub: 'demo-officer-sub', fullName: 'Maria Santos', firstName: 'Maria', middleName: '', lastName: 'Santos', email: 'maria.santos@plainview.gov.ph', mobile: '+639171234567', raw: { persona: 'officer' } },
+    'qa-officer': { ...base, sub: 'qa-studio-officer-sub', fullName: 'QA Studio Officer', firstName: 'QA', middleName: 'Studio', lastName: 'Officer', email: 'qa.studio@example.gov.ph', mobile: '+639000000000', raw: { persona: 'qa-officer' } },
     reviewer: { ...base, sub: 'demo-reviewer-sub', fullName: 'Jose Reyes', firstName: 'Jose', middleName: '', lastName: 'Reyes', email: 'jose.reyes@dict.gov.ph', mobile: '+639179876543', raw: { persona: 'reviewer' } },
     citizen: { ...base, sub: 'demo-citizen-sub', fullName: 'Juana Santos Dela Cruz', email: 'juana.delacruz@example.ph', mobile: '+639175551234', raw: { persona: 'citizen' } },
   }

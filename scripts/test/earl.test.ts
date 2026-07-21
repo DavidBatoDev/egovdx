@@ -61,7 +61,6 @@ function supabase() {
 }
 
 const TEST_REQUEST_ID = 'dddddddd-0000-0000-0000-000000000099'
-const TEST_SERVICE_ID = 'cccccccc-0000-0000-0000-000000000001'
 
 async function ensureDocumentsBucket() {
   const db = supabase()
@@ -78,9 +77,11 @@ async function seedApprovedRequest() {
   await db.storage.from('documents').remove([`${TEST_REQUEST_ID}.pdf`])
   await db.from('request_events').delete().eq('request_id', TEST_REQUEST_ID)
   await db.from('requests').delete().eq('id', TEST_REQUEST_ID)
+  const { data: service, error: serviceError } = await db.from('lgu_services').select('id').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  if (serviceError || !service) throw new Error(serviceError?.message ?? 'No paid published service available')
   const { error } = await db.from('requests').insert({
     id: TEST_REQUEST_ID,
-    lgu_service_id: TEST_SERVICE_ID,
+    lgu_service_id: service.id,
     citizen_name: 'JOSIE DELA CRUZ',
     citizen_mobile: '+639090000000',
     everify_payload: {

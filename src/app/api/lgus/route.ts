@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (existingError) throw new Error(existingError.message)
     if (existing) {
       return NextResponse.json(
-        { error: `${existing.name} is already registered.`, lguId: existing.id },
+        { error: `${existing.name} is already registered. Ask its current administrator to add your officer account.` },
         { status: 409 },
       )
     }

@@ -71,7 +71,7 @@ export function ApplicationClient({ draft, identityMock }: { draft: RequestWithS
   }
 
   const documentsComplete = draft.service.required_docs.every((required) => documents.some((document) => document.requirement === required))
-  return <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+  return <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
     <PageHeader eyebrow={`${draft.service.lgu.name} · eGovPH service`} title={draft.service.template.name} description="Your verified identity is reused, so you only provide information government does not already hold." action={<Badge tone="brand">Draft</Badge>} />
     <Stepper steps={STEPS} current={step} />
     {error ? <Toast tone="danger">{error}</Toast> : null}{message ? <Toast>{message}</Toast> : null}
@@ -80,5 +80,5 @@ export function ApplicationClient({ draft, identityMock }: { draft: RequestWithS
     {step === 2 ? <Card><CardHeader title="Required documents" description="PDF, JPEG, or PNG · maximum 4 MB each" /><CardBody className="space-y-4">{draft.service.required_docs.length === 0 ? <p className="text-sm text-muted">No supporting documents are required.</p> : draft.service.required_docs.map((requirement) => <Field key={requirement} label={requirement} hint={documents.some((document) => document.requirement === requirement) ? <Badge tone="success">Uploaded</Badge> : undefined}><FileUpload accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" disabled={busy} onChange={(event) => upload(requirement, event.target.files?.[0] ?? null)} /></Field>)}<Button disabled={!documentsComplete} onClick={() => setStep(3)}>Continue to fee</Button></CardBody></Card> : null}
     {step === 3 ? <Card><CardHeader title="Fee assessment" action={<Badge tone="accent">{peso(Number(draft.service.fee_amount))}</Badge>} /><CardBody className="space-y-4">{draft.service.waivers.length ? <Field label="Applicable waiver" hint="Optional"><select className={inputClass} value={selectedWaiver} onChange={(event) => setSelectedWaiver(event.target.value)}><option value="">No waiver</option>{draft.service.waivers.map((waiver) => <option key={waiver.category} value={waiver.category}>{waiver.label}</option>)}</select></Field> : null}<p className="text-sm text-muted">Status: <strong>{feeStatus}</strong></p><Button disabled={busy} onClick={() => assessFee(false)}>Assess fee</Button>{message?.includes('Mock checkout') ? <Button variant="secondary" disabled={busy} onClick={() => assessFee(true)}>Confirm mock payment</Button> : null}</CardBody></Card> : null}
     {step === 4 ? <Card><CardHeader title="Submit application" /><CardBody className="space-y-4"><p className="text-sm">Your verified application will be routed to <strong>{draft.service.approval_office ?? 'the issuing LGU office'}</strong>.</p><Button disabled={busy} onClick={submit}>{busy ? 'Submitting…' : 'Submit request'}</Button></CardBody></Card> : null}
-  </main>
+  </div>
 }

@@ -24,7 +24,7 @@ export function PaymentClient({ requestId, serviceName, fee, waivers, initialSta
     finally { setLoading(false) }
   }
 
-  return <main className="mx-auto max-w-2xl space-y-6 px-4 py-10">
+  return <div className="mx-auto max-w-2xl space-y-6 px-4 py-10">
     <PageHeader eyebrow="eGovPH citizen service" title={serviceName} description="Fee assessment and eGOV PAY checkout" action={<StatusBadge status={status} />} />
     <Card><CardHeader title="Fee assessment" action={<Badge tone="brand">{peso(payment?.feeDue ?? fee)}</Badge>} /><CardBody className="space-y-4">
       {waivers.length > 0 && status === 'unpaid' ? <Field label="Applicable waiver" hint="Optional"><select className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm" value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">No waiver</option>{waivers.map((w) => <option key={w.category} value={w.category}>{w.label}</option>)}</select></Field> : null}
@@ -32,5 +32,5 @@ export function PaymentClient({ requestId, serviceName, fee, waivers, initialSta
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       {status === 'paid' || status === 'waived' ? <p className="rounded-lg bg-success-soft p-3 text-sm text-success">Fee requirement complete. This request is ready for officer review.</p> : payment?.checkoutUrl && payment.source === 'live' ? <a className="inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white" href={payment.checkoutUrl}>Continue to eGOV PAY</a> : payment ? <Button disabled={loading} onClick={() => call('GET')}>Confirm mock payment</Button> : <Button disabled={loading} onClick={() => call('POST')}>{loading ? 'Preparing…' : 'Assess fee'}</Button>}
     </CardBody></Card>
-  </main>
+  </div>
 }

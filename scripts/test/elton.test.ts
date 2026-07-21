@@ -8,6 +8,7 @@ const BASE = process.env.QA_BASE_URL ?? 'http://localhost:3000'
 const PAY_ID = 'eeeeeeee-0000-0000-0000-000000000001'
 const WAIVE_ID = 'eeeeeeee-0000-0000-0000-000000000002'
 const REJECT_ID = 'eeeeeeee-0000-0000-0000-000000000003'
+let paidFee = 0
 
 function db() { return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } }) }
 async function cookie(role: 'citizen'|'officer', sub: string, lguId: string | null) {
@@ -22,11 +23,16 @@ async function api(path: string, method: 'GET'|'POST', auth: string, body?: unkn
 async function seed() {
   const client = db()
   await cleanup()
+  const { data: paidService, error: paidError } = await client.from('lgu_services').select('id,fee_amount').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  const { data: freeService, error: freeError } = await client.from('lgu_services').select('id').eq('lgu_id', '22222222-2222-2222-2222-222222222222').eq('status', 'published').eq('fee_amount', 0).limit(1).maybeSingle()
+  if (paidError || !paidService) throw new Error(paidError?.message ?? 'No paid published service available')
+  if (freeError || !freeService) throw new Error(freeError?.message ?? 'No free published service available')
+  paidFee = Number(paidService.fee_amount)
   const common = { citizen_sub: 'demo-citizen-sub', citizen_name: 'Demo Citizen', citizen_mobile: '+639171234567', everify_payload: { full_name: 'Demo Citizen', reference: 'EV-ELTON-001' }, liveness_passed: true, liveness_score: 98.5, everify_reference: 'EV-ELTON-001', form_data: { purpose: 'Employment' }, status: 'submitted' }
   const { error } = await client.from('requests').insert([
-    { ...common, id: PAY_ID, lgu_service_id: 'cccccccc-0000-0000-0000-000000000001', fee_due: 50, fee_status: 'unpaid' },
-    { ...common, id: WAIVE_ID, lgu_service_id: 'cccccccc-0000-0000-0000-000000000002', fee_due: 0, fee_status: 'unpaid' },
-    { ...common, id: REJECT_ID, lgu_service_id: 'cccccccc-0000-0000-0000-000000000001', fee_due: 50, fee_status: 'paid' },
+    { ...common, id: PAY_ID, lgu_service_id: paidService.id, fee_due: paidFee, fee_status: 'unpaid' },
+    { ...common, id: WAIVE_ID, lgu_service_id: freeService.id, fee_due: 0, fee_status: 'unpaid' },
+    { ...common, id: REJECT_ID, lgu_service_id: paidService.id, fee_due: paidFee, fee_status: 'paid' },
   ])
   if (error) throw new Error(error.message)
 }
@@ -48,7 +54,7 @@ async function main() {
 
   let result = await api(`/api/requests/${PAY_ID}/payment`, 'POST', citizen, {})
   assert.equal(result.response.status, 200, JSON.stringify(result.data))
-  assert.equal(result.data.feeDue, 50)
+  assert.equal(result.data.feeDue, paidFee)
   assert.equal(result.data.source, 'mock')
   result = await api(`/api/requests/${PAY_ID}/payment`, 'GET', citizen)
   assert.equal(result.data.feeStatus, 'paid')
@@ -88,4 +94,3 @@ async function main() {
 }
 
 main().catch(async (error) => { console.error(error); await cleanup().catch(() => {}); process.exitCode = 1 })
-

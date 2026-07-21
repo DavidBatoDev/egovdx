@@ -23,21 +23,24 @@ Production: [egovdx.vercel.app](https://egovdx.vercel.app)
   atomic approval and control sequencing, PDF/chain/SMS orchestration, retries,
   audit events, and LGU analytics.
 
-The workflow now begins in the dynamic citizen catalog and continues through
-identity, application, payment, approval, issuance, and public verification.
+The workflow now begins at Jasmin's public landing and three-role gateway. It
+continues through the officer Studio and review boundary, the dynamic citizen
+catalog, identity, application, payment, approval, issuance, and public
+verification without using an implementation harness.
 
 ## Remaining work
 
-No core application feature remains unbuilt. Before final recording, complete
-the controlled live checks for David's AI adapter, Joshua's identity chain, and
-Elton's Pay/eMessage adapters; add Joshua's dedicated eVerify implementation
-harness; then rerun production browser QA. Jasmin and Earl have no remaining
-owned implementation work.
+No core application feature or required harness remains unbuilt. Before final
+recording, complete the controlled live checks for David's AI adapter, Joshua's
+identity chain, and Elton's Pay/eMessage adapters, then rerun production browser
+QA. Jasmin and Earl have no remaining owned implementation work.
 
 ## Important routes
 
 | Route | Purpose |
 |---|---|
+| `/` | Public landing and citizen/officer/reviewer gateway |
+| `/services` | Native citizen catalog of published LGU services |
 | `/console/studio` | Generate, preview, validate, and confirm an eService |
 | `/lgus`, `/apply/[serviceId]`, `/track/[requestId]` | Citizen discovery, application, and status tracking |
 | `/review` | Resolve blocked configurations and publish approved exceptions |
@@ -45,7 +48,7 @@ owned implementation work.
 | `/console/requests` | Review, reject, approve, issue, anchor, and notify |
 | `/console/analytics` | LGU-scoped operational metrics |
 | `/verify` and `/verify/[id]` | Public document/hash verification and tamper test |
-| `/implementation` | Integration harness and ownership board |
+| `/implementation` | Direct-access diagnostic harness and ownership board; not part of product navigation |
 
 ## Local setup
 
@@ -75,7 +78,8 @@ npm run test:elton:unit
 npm run test:elton
 npm run test:earl
 npm run test:jasmin
-npm run qa -- elton-payment elton-approval elton-analytics
+npm run qa                    # product journeys only, headed at 800 ms
+npm run qa:diagnostics        # direct /implementation adapter harnesses
 ```
 
 Browser QA is headed with 800 ms slow motion by default. Run `npx next build`

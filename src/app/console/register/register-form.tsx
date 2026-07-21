@@ -52,12 +52,9 @@ export function RegisterLguForm({ initialResults }: { initialResults: PsgcEntry[
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ psgcCode: selected.code, officialEmail }),
       })
-      const body = (await response.json()) as { id?: string; error?: string; lguId?: string }
-      if (!response.ok) {
-        if (response.status === 409 && body.lguId) router.push(`/console?lgu=${body.lguId}`)
-        throw new Error(body.error ?? 'Could not register the LGU.')
-      }
-      router.push(`/console?lgu=${body.id}`)
+      const body = (await response.json()) as { id?: string; error?: string }
+      if (!response.ok) throw new Error(body.error ?? 'Could not register the LGU.')
+      router.push('/console')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not register the LGU.')

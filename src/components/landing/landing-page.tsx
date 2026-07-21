@@ -14,8 +14,9 @@ import { ButtonLink, cn } from '@/components/ui'
  * so unification is a one-import move.
  */
 
-const SIGNIN = '/signin'
 const OFFICER_SIGNIN = '/signin?next=/console'
+const CITIZEN_SIGNIN = '/signin?next=/services'
+const REVIEWER_SIGNIN = '/signin?next=/review'
 
 // ------------------------------------------------------------------ helpers
 
@@ -108,7 +109,7 @@ const BENEFICIARIES = [
       'SMS the moment it issues',
     ],
     cta: 'Browse services',
-    href: '/',
+    href: '/services',
   },
   {
     who: 'For the barangay',
@@ -177,9 +178,9 @@ const LIMITS = [
 ]
 
 const GET_STARTED = [
+  { title: 'Citizen services', body: 'Find an LGU service and submit a verified request', href: CITIZEN_SIGNIN },
   { title: 'Officer console', body: 'Sign in and configure a service', href: OFFICER_SIGNIN },
-  { title: 'DICT review', body: 'Clear anything validation flags', href: '/review' },
-  { title: 'Public verification', body: 'Check a document’s authenticity', href: '/verify' },
+  { title: 'DICT review', body: 'Clear anything automated validation flags', href: REVIEWER_SIGNIN },
 ]
 
 // --------------------------------------------------------------------- page
@@ -443,7 +444,7 @@ export function LandingPage() {
         <div className="grid gap-12 md:grid-cols-2">
           <div className="space-y-6">
             <h2 className="font-display text-3xl leading-tight text-foreground md:text-[40px]">
-              Get started
+              Choose your eGovPH role
             </h2>
             <div className="space-y-3">
               {GET_STARTED.map((item) => (
@@ -489,59 +490,6 @@ export function LandingPage() {
         </div>
       </Section>
 
-      {/* ========================================================== FOOTER */}
-      <footer className="bg-surface-footer">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
-          <div className="space-y-3">
-            <p className="font-display text-xl text-white">eSee LGU</p>
-            <p className="text-sm text-white/60">
-              A DICT-funded configuration layer for eGovPH. Services publish only after
-              automated validation, with flagged submissions routed to a human reviewer.
-            </p>
-          </div>
-          <FooterCol
-            title="Product"
-            links={[
-              ['Officer console', OFFICER_SIGNIN],
-              ['Browse services', '/'],
-              ['Verify a document', '/verify'],
-            ]}
-          />
-          <FooterCol
-            title="Learn more"
-            links={[
-              ['Implementation', '/implementation'],
-              ['DICT review', '/review'],
-              ['Sign in', SIGNIN],
-            ]}
-          />
-          <div className="space-y-3">
-            <p className="text-sm font-bold text-white">Stay informed</p>
-            <div className="flex overflow-hidden rounded-sm border border-white/25">
-              <span className="flex-1 px-3 py-2 text-sm text-white/50">Email goes here</span>
-              <span className="bg-accent px-4 py-2 text-sm font-bold text-black">Send</span>
-            </div>
-            <p className="text-xs text-white/50">Team PRODIGITALITY · built on eGovPH</p>
-          </div>
-        </div>
-      </footer>
-    </div>
-  )
-}
-
-function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-bold text-white">{title}</p>
-      <ul className="space-y-2">
-        {links.map(([label, href]) => (
-          <li key={label}>
-            <Link href={href} className="text-sm text-white/60 hover:text-white">
-              {label}
-            </Link>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }

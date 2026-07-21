@@ -27,7 +27,7 @@ export default function VerifyForm() {
   }
 
   return (
-    <main className="mx-auto max-w-xl space-y-6 px-4 py-12">
+    <div className="mx-auto max-w-xl space-y-6 px-4 py-12">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground">Verify a Document</h1>
         <p className="mt-2 text-sm text-muted">
@@ -136,6 +136,6 @@ export default function VerifyForm() {
         <span className="font-semibold text-brand">eSee LGU</span> · eGOV chain (Hyperledger Besu,
         Chain ID 13371)
       </p>
-    </main>
+    </div>
   )
 }

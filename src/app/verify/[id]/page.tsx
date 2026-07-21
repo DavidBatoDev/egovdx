@@ -30,7 +30,7 @@ export default async function VerifyPage({ params }: Props) {
 
   if (!request || request.status !== 'issued') {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16 text-center">
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <div className="mb-6 text-5xl">✗</div>
         <h1 className="text-2xl font-bold text-danger">Document Not Verified</h1>
         <p className="mt-2 text-sm text-muted">
@@ -49,7 +49,7 @@ export default async function VerifyPage({ params }: Props) {
             Try verifying another document
           </Link>
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -67,7 +67,7 @@ export default async function VerifyPage({ params }: Props) {
   const payload = (request.everify_payload ?? {}) as Record<string, string>
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-4 py-12">
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-12">
       {/* Verification result banner */}
       <div
         className={`rounded-2xl border-2 px-6 py-8 text-center ${
@@ -184,7 +184,7 @@ export default async function VerifyPage({ params }: Props) {
           Verify another document
         </Link>
       </p>
-    </main>
+    </div>
   )
 }
 
