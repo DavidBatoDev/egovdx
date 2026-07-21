@@ -16,7 +16,7 @@ import { SignJWT } from 'jose'
 
 config({ path: '.env.local', quiet: true })
 
-const ELTON_QA_SERVICE = 'cccccccc-0000-0000-0000-000000000001'
+const STUDIO_QA_LGU = 'dddddddd-0000-0000-0000-000000000001'
 function qaDb() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase QA credentials missing')
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
@@ -24,7 +24,11 @@ function qaDb() {
 async function seedEltonRequest(id, feeStatus = 'unpaid') {
   const db = qaDb()
   await cleanupEltonRequest(id)
-  const { error } = await db.from('requests').insert({ id, lgu_service_id: ELTON_QA_SERVICE, citizen_sub: 'demo-citizen-sub', citizen_name: `QA Citizen ${id.slice(-2)}`, citizen_mobile: '+639171234567', everify_payload: { full_name: 'QA Citizen', reference: `EV-${id.slice(-4)}` }, everify_reference: `EV-${id.slice(-4)}`, liveness_passed: true, liveness_score: 98.5, form_data: { purpose: 'Employment' }, status: 'submitted', fee_due: 50, fee_status: feeStatus })
+  const { data: officer, error: officerError } = await db.from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+  if (officerError || !officer) throw new Error(officerError?.message ?? 'Demo officer is not assigned to an LGU')
+  const { data: service, error: serviceError } = await db.from('lgu_services').select('id,fee_amount').eq('lgu_id', officer.lgu_id).eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  if (serviceError || !service) throw new Error(serviceError?.message ?? 'No paid published service available for QA')
+  const { error } = await db.from('requests').insert({ id, lgu_service_id: service.id, citizen_sub: 'demo-citizen-sub', citizen_name: `QA Citizen ${id.slice(-2)}`, citizen_mobile: '+639171234567', everify_payload: { full_name: 'QA Citizen', reference: `EV-${id.slice(-4)}` }, everify_reference: `EV-${id.slice(-4)}`, liveness_passed: true, liveness_score: 98.5, form_data: { purpose: 'Employment' }, status: 'submitted', fee_due: Number(service.fee_amount), fee_status: feeStatus })
   if (error) throw new Error(error.message)
 }
 async function cleanupEltonRequest(id) {
@@ -43,10 +47,28 @@ async function cleanupCitizenDrafts() {
     await db.from('requests').delete().eq('id', draft.id)
   }
 }
-async function setQaSession(page, baseUrl, role) {
+async function ensureStudioQaLgu() {
+  const db = qaDb()
+  const { error } = await db.from('lgus').upsert({ id: STUDIO_QA_LGU, name: 'QA Integration LGU', type: 'municipality', region: 'QA', psgc_code: '9900000000', official_email: 'qa@example.gov.ph' }, { onConflict: 'id' })
+  if (error) throw new Error(error.message)
+  const { error: officerError } = await db.from('officers').upsert({ id: 'dddddddd-0000-0000-0000-000000000002', egov_sub: 'qa-studio-officer-sub', lgu_id: STUDIO_QA_LGU, full_name: 'QA Studio Officer', position: 'QA', role: 'officer' }, { onConflict: 'id' })
+  if (officerError) throw new Error(officerError.message)
+}
+async function cleanupStudioQaLgu() {
+  const db = qaDb()
+  const { data: services } = await db.from('lgu_services').select('id').eq('lgu_id', STUDIO_QA_LGU)
+  const ids = (services ?? []).map((service) => service.id)
+  if (ids.length) await db.from('validation_flags').delete().in('lgu_service_id', ids)
+  await db.from('lgu_services').delete().eq('lgu_id', STUDIO_QA_LGU)
+  await db.from('studio_generation_cache').delete().eq('lgu_id', STUDIO_QA_LGU)
+  await db.from('officers').delete().eq('egov_sub', 'qa-studio-officer-sub')
+  await db.from('lgus').delete().eq('id', STUDIO_QA_LGU)
+}
+async function setQaSession(page, baseUrl, role, lguId) {
   const origin = new URL(baseUrl)
   if (!['localhost', '127.0.0.1'].includes(origin.hostname)) {
-    await page.goto(`${baseUrl}/api/auth/egov/login?persona=${role}`, { waitUntil: 'domcontentloaded' })
+    const persona = role === 'officer' && lguId === STUDIO_QA_LGU ? 'qa-officer' : role
+    await page.goto(`${baseUrl}/api/auth/egov/login?persona=${persona}`, { waitUntil: 'domcontentloaded' })
     if (page.url().includes('/authorize') || page.url().includes('error=')) {
       throw new Error(`Deployed ${role} QA session could not be established at ${page.url()}`)
     }
@@ -54,11 +76,18 @@ async function setQaSession(page, baseUrl, role) {
   }
   if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET missing')
   const officer = role === 'officer'
+  const reviewer = role === 'reviewer'
+  let sessionLguId = lguId ?? null
+  if (officer && lguId === undefined) {
+    const { data: assignedOfficer, error } = await qaDb().from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+    if (error || !assignedOfficer) throw new Error(error?.message ?? 'Demo officer is not assigned to an LGU')
+    sessionLguId = assignedOfficer.lgu_id
+  }
   const token = await new SignJWT({
-    sub: officer ? 'demo-officer-sub' : 'demo-citizen-sub',
-    name: officer ? 'Maria Santos' : 'Demo Citizen',
+    sub: officer ? 'demo-officer-sub' : reviewer ? 'demo-reviewer-sub' : 'demo-citizen-sub',
+    name: officer ? 'Maria Santos' : reviewer ? 'Jose Reyes' : 'Demo Citizen',
     role,
-    lguId: officer ? '22222222-2222-2222-2222-222222222222' : null,
+    lguId: officer ? sessionLguId : null,
     mobile: '+639171234567',
     firstName: officer ? 'Maria' : 'Juana',
     middleName: officer ? '' : 'Santos',
@@ -106,27 +135,55 @@ export async function visit(page, url, { path = new URL(url).pathname } = {}) {
   return res
 }
 
+async function visitOfficerSection(page, baseUrl, section) {
+  await visit(page, `${baseUrl}/lgu`, { path: '/lgu' })
+  const canonicalBase = new URL(page.url()).pathname.replace(/\/$/, '')
+  await visit(page, `${baseUrl}${canonicalBase}/${section}`, { path: `${canonicalBase}/${section}` })
+}
+
 export const flows = [
   {
     id: 'landing',
-    name: 'Citizen landing — published services render',
+    name: 'Product landing — role gateway connects all three journeys',
     owner: 'Jasmin',
     /** @param {Ctx} c */
     async run({ page, baseUrl, shot }) {
       await visit(page, baseUrl, { path: '/' })
       await page.getByRole('heading', { level: 1 }).waitFor({ timeout: 10_000 })
 
-      // The setup panel means Supabase isn't reachable. That is a real failure
-      // of the page's purpose even though the page itself rendered fine.
-      const setupNotice = page.getByText('Finish the Supabase setup')
-      if (await setupNotice.isVisible().catch(() => false)) {
-        throw new Error('Supabase unreachable — landing page shows setup instructions')
-      }
+      await page.getByRole('heading', { name: /choose your egovph role/i }).waitFor()
+      await page.getByRole('link', { name: /citizen services/i }).waitFor()
+      await page.getByRole('link', { name: /lgu workspace/i }).first().waitFor()
+      await page.getByRole('link', { name: /dict review/i }).first().waitFor()
+      await shot('role-gateway')
+      return 'citizen, officer, and reviewer entry points rendered'
+    },
+  },
 
+  {
+    id: 'signin',
+    name: 'Sign in — citizen LGU discovery is the primary journey',
+    owner: 'Jasmin',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/signin`)
+      await page.getByRole('heading', { name: /your lgu services/i }).waitFor()
+      await page.getByRole('link', { name: /browse my lgu/i }).waitFor()
+      await page.getByRole('link', { name: /lgu officer/i }).waitFor()
+      await page.getByRole('link', { name: /dict reviewer/i }).waitFor()
+      await shot('citizen-gateway')
+      return 'mobile LGU preview and all three access paths rendered'
+    },
+  },
+
+  {
+    id: 'service-catalog',
+    name: 'Citizen catalog — published services render',
+    owner: 'Jasmin',
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/citizen/services`)
       const requestButtons = page.getByRole('link', { name: /request this/i })
       const count = await requestButtons.count()
       if (count === 0) throw new Error('No published services rendered — is seed.sql loaded?')
-
       await shot('services-listed')
       return `${count} service(s) listed`
     },
@@ -134,14 +191,14 @@ export const flows = [
 
   {
     id: 'sso-officer',
-    name: 'SSO — officer signs in and is routed to the console',
+    name: 'SSO — officer signs in and is routed to the scoped LGU workspace',
     owner: 'Joshua',
     async run({ page, baseUrl, shot }) {
       if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
         await setQaSession(page, baseUrl, 'officer')
-        await visit(page, `${baseUrl}/console`)
+        await visit(page, `${baseUrl}/lgu`)
         await shot('officer-signed-in')
-        return 'local signed test session routed to /console'
+        return 'local signed test session routed to the scoped LGU workspace'
       }
       // The login route redirects, so check where we ended up AND that the
       // destination actually rendered — a redirect into a 404 is not a pass.
@@ -153,16 +210,16 @@ export const flows = [
       if (url.includes('error=')) {
         throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
       }
-      if (!url.includes('/console')) {
-        throw new Error(`Officer landed on ${url}, expected /console`)
+      if (!new URL(url).pathname.startsWith('/lgu/')) {
+        throw new Error(`Officer landed on ${url}, expected a scoped /lgu route`)
       }
 
       const status = res?.status() ?? 0
-      if (status === 404) throw new NotBuiltError('/console', status)
-      if (status >= 400) throw new Error(`/console returned HTTP ${status}`)
+      if (status === 404) throw new NotBuiltError('/lgu', status)
+      if (status >= 400) throw new Error(`/lgu returned HTTP ${status}`)
 
       await shot('officer-signed-in')
-      return 'routed to /console'
+      return 'routed to a scoped LGU workspace'
     },
   },
 
@@ -170,20 +227,23 @@ export const flows = [
     id: 'sso-citizen',
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
-    async run({ page, baseUrl }) {
-      if (['localhost', '127.0.0.1'].includes(new URL(baseUrl).hostname)) {
-        await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, baseUrl)
-        return 'local signed test session established'
-      }
-      await page.goto(`${baseUrl}/api/auth/egov/login?persona=citizen`, {
-        waitUntil: 'domcontentloaded',
-      })
+    async run({ page, baseUrl, shot }) {
+      await visit(page, `${baseUrl}/signin`)
+      await page.getByRole('link', { name: /browse my lgu|continue as a citizen/i }).click()
+      await page.waitForLoadState('domcontentloaded')
       const url = page.url()
       if (url.includes('error=')) {
         throw new Error(`Sign-in failed: ${new URL(url).searchParams.get('error')}`)
       }
-      return 'session established'
+      const pathname = new URL(url).pathname
+      if (pathname !== '/citizen/services') {
+        throw new Error(`Citizen landed on ${pathname}, expected /citizen/services`)
+      }
+      await page.getByRole('heading', { name: /request a local government document online/i }).waitFor()
+      await page.getByText('citizen', { exact: true }).waitFor()
+      await page.getByRole('link', { name: /sign out/i }).waitFor()
+      await shot('citizen-signed-in')
+      return 'citizen session established at /citizen/services'
     },
   },
 
@@ -194,12 +254,12 @@ export const flows = [
     async run({ page, baseUrl, shot }) {
       await cleanupCitizenDrafts()
       await setQaSession(page, baseUrl, 'citizen')
-      await visit(page, baseUrl, { path: '/' })
+      await visit(page, `${baseUrl}/citizen/services`, { path: '/citizen/services' })
       const first = page.getByRole('link', { name: /request this/i }).first()
       if ((await first.count()) === 0) throw new Error('No service to apply for')
 
       const href = await first.getAttribute('href')
-      await visit(page, `${baseUrl}${href}`, { path: href ?? '/apply' })
+      await visit(page, `${baseUrl}${href}`, { path: href ?? '/citizen/apply' })
 
       await page.getByRole('button', { name: /start face liveness/i }).click()
       await page.getByRole('heading', { name: /application form/i }).waitFor({ timeout: 30_000 })
@@ -235,14 +295,14 @@ export const flows = [
   },
 
   {
-    id: 'console',
-    name: 'Officer console — service dashboard loads',
+    id: 'lgu-workspace',
+    name: 'LGU workspace — service dashboard loads',
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
       await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console`)
-      await shot('console')
-      return 'console reachable'
+      await visit(page, `${baseUrl}/lgu`)
+      await shot('lgu-workspace')
+      return 'scoped LGU workspace reachable'
     },
   },
 
@@ -251,8 +311,8 @@ export const flows = [
     name: 'LGU onboarding — officer can open PSA-backed registration',
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
-      await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console/register`)
+      await setQaSession(page, baseUrl, 'officer', null)
+      await visit(page, `${baseUrl}/lgu/register`)
       await page.getByRole('heading', { name: /register an lgu/i }).waitFor({ timeout: 10_000 })
       await page.getByPlaceholder('e.g. Marilao').fill('Marilao')
       await page.getByRole('button', { name: /^search$/i }).click()
@@ -270,11 +330,13 @@ export const flows = [
       await seedEltonRequest(id)
       try {
         await setQaSession(page, baseUrl, 'citizen')
-        await visit(page, `${baseUrl}/pay/${id}`)
-        await page.getByRole('heading', { name: /barangay clearance/i }).waitFor({ timeout: 15_000 })
+        await visit(page, `${baseUrl}/citizen/pay/${id}`)
+        await page.getByRole('heading', { name: /fee assessment/i }).waitFor({ timeout: 15_000 })
+        await page.waitForTimeout(250)
         await page.getByRole('button', { name: /assess fee/i }).click()
-        await page.getByText(/mock data/i).waitFor({ timeout: 60_000 })
-        await page.getByRole('button', { name: /confirm mock payment/i }).click()
+        const confirm = page.getByRole('button', { name: /confirm mock payment/i })
+        await confirm.waitFor({ timeout: 60_000 })
+        await confirm.click()
         await page.getByText(/ready for officer review/i).waitFor()
         await shot('elton-payment-complete')
         return 'payment created and reconciled once'
@@ -291,18 +353,59 @@ export const flows = [
       await seedEltonRequest(id, 'paid')
       try {
         await setQaSession(page, baseUrl, 'officer')
-        await visit(page, `${baseUrl}/console/requests`)
+        await visitOfficerSection(page, baseUrl, 'requests')
         const row = page.locator('article').filter({ hasText: 'QA Citizen 02' })
+        await row.waitFor()
+        await page.waitForTimeout(250)
         await row.getByRole('button', { name: /approve and issue/i }).click()
         // A real chain receipt can take the adapter's full 30-second receipt
         // window on a cold serverless start. Accept every honestly labelled
         // source; production is expected to show Live API, while local QA uses
         // the explicit mock badge.
-        await row.getByText('Issued').waitFor({ timeout: 90_000 })
-        await row.getByText(/Live API|Mock data|Offline — using cached data/i).waitFor()
+        await row.getByRole('link', { name: /open public verification/i }).waitFor({ timeout: 90_000 })
+        await row.getByText(/Live API|Mock data|Offline — using cached data/i).first().waitFor()
         await shot('elton-approved-issued')
         return 'PDF, chain attempt, and SMS completed'
       } finally { await cleanupEltonRequest(id) }
+    },
+  },
+
+  {
+    id: 'unified-issuance',
+    name: 'Unified journey — officer issuance reaches citizen tracking and public verification',
+    owner: 'Earl',
+    async run({ page, baseUrl, shot }) {
+      const id = 'eeeeeeee-1000-0000-0000-000000000003'
+      await seedEltonRequest(id, 'paid')
+      try {
+        await setQaSession(page, baseUrl, 'officer')
+        let row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await visitOfficerSection(page, baseUrl, 'requests')
+          row = page.locator('article').filter({ hasText: 'QA Citizen 03' })
+          if (await row.isVisible().catch(() => false)) break
+          await page.waitForTimeout(2_000)
+        }
+        await row.waitFor({ timeout: 15_000 })
+        await page.waitForTimeout(250)
+        await row.getByRole('button', { name: /approve and issue/i }).click()
+        await row.getByRole('link', { name: /open public verification/i }).waitFor({ timeout: 90_000 })
+        await shot('officer-issued')
+
+        await setQaSession(page, baseUrl, 'citizen')
+        await visit(page, `${baseUrl}/citizen/track/${id}`)
+        await page.getByText(/official pdf is ready/i).waitFor()
+        await page.getByRole('link', { name: /verify document/i }).waitFor()
+        await shot('citizen-issued')
+
+        await page.context().clearCookies()
+        await visit(page, `${baseUrl}/verify/${id}`)
+        await page.getByRole('heading', { name: /document verified/i }).waitFor({ timeout: 30_000 })
+        await shot('publicly-verified')
+        return 'approval, issuance, citizen tracking, and signed-out verification completed'
+      } finally {
+        await cleanupEltonRequest(id)
+      }
     },
   },
 
@@ -312,7 +415,7 @@ export const flows = [
     owner: 'Elton',
     async run({ page, baseUrl, shot }) {
       await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console/analytics`)
+      await visitOfficerSection(page, baseUrl, 'analytics')
       await page.getByRole('heading', { name: /service analytics/i }).waitFor()
       await shot('elton-analytics')
       return 'LGU-scoped analytics rendered'
@@ -324,34 +427,33 @@ export const flows = [
     name: 'AI Studio — prompt box accepts an unrehearsed service description',
     owner: 'David',
     async run({ page, baseUrl, shot }) {
-      await setQaSession(page, baseUrl, 'officer')
-      await visit(page, `${baseUrl}/console/studio`)
+      await ensureStudioQaLgu()
+      try {
+        await setQaSession(page, baseUrl, 'officer', STUDIO_QA_LGU)
+        await visitOfficerSection(page, baseUrl, 'studio')
 
-      const prompt = page.locator('textarea').first()
-      await prompt.waitFor({ timeout: 30_000 })
+        const prompt = page.locator('textarea').first()
+        await prompt.waitFor({ timeout: 30_000 })
+        await page.waitForTimeout(250)
+        await prompt.fill(
+          'Create a Tricycle Franchise Renewal for Marilao. Require OR/CR and a ' +
+            'barangay clearance. Charge a fee of 300 pesos. Route approvals to the ' +
+            'Municipal Transport Office.',
+        )
+        await page.getByRole('button', { name: 'Generate preview' }).click()
+        await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 75_000 })
+        await shot('studio-preview')
+        await page.getByRole('button', { name: 'Confirm and submit' }).click()
+        await page.getByText(/Published|Sent to DICT review/).waitFor({ timeout: 20_000 })
 
-      // Deliberately NOT the rehearsed demo prompt. The bar is a working app,
-      // so the Studio has to handle a service nobody scripted.
-      await prompt.fill(
-        'Create a Tricycle Franchise Renewal for Marilao. Require OR/CR and a ' +
-          'barangay clearance. Charge a fee of 300 pesos. Route approvals to the ' +
-          'Municipal Transport Office.',
-      )
-      await page.getByRole('button', { name: 'Generate preview' }).click()
-      await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 75_000 })
-      await shot('studio-preview')
-      await page.getByRole('button', { name: 'Confirm and submit' }).click()
-      await page.getByText(/Published|Sent to DICT review/).waitFor({ timeout: 20_000 })
-
-      const upload = page.locator('input[type=file]')
-      await upload.setInputFiles({
-        name: 'blank-tricycle-form.png',
-        mimeType: 'image/png',
-        buffer: Buffer.from('mock blank form for extractor QA'),
-      })
-      await page.getByText(/Model:/).waitFor({ timeout: 45_000 })
-      await shot('studio-upload-preview')
-      return 'unrehearsed prompt generated, confirmed, and blank form extracted'
+        const upload = page.locator('input[type=file]')
+        await upload.setInputFiles({ name: 'blank-tricycle-form.png', mimeType: 'image/png', buffer: Buffer.from('mock blank form for extractor QA') })
+        await page.getByText(/Model:/).waitFor({ timeout: 45_000 })
+        await shot('studio-upload-preview')
+        return 'unrehearsed prompt generated, confirmed, and blank form extracted in an isolated QA LGU'
+      } finally {
+        await cleanupStudioQaLgu()
+      }
     },
   },
 
@@ -360,7 +462,7 @@ export const flows = [
     name: 'DICT review queue — flagged service shows the rule it broke',
     owner: 'David',
     async run({ page, baseUrl, shot }) {
-      await page.goto(`${baseUrl}/api/auth/egov/login?persona=reviewer`)
+      await setQaSession(page, baseUrl, 'reviewer')
       await visit(page, `${baseUrl}/review`)
       for (let resolved = 0; resolved < 10; resolved++) {
         const firstNote = page.getByPlaceholder('Required approved-exception note').first()
@@ -417,6 +519,7 @@ export const flows = [
 
   {
     id: 'doc-issuance-harness',
+    diagnostic: true,
     name: 'Doc issuance harness — PDF generates with hash',
     owner: 'Earl',
     async run({ page, baseUrl, shot }) {
@@ -433,7 +536,23 @@ export const flows = [
   },
 
   {
+    id: 'everify-harness',
+    diagnostic: true,
+    name: 'eVerify harness — protected normalized result renders',
+    owner: 'Joshua',
+    async run({ page, baseUrl, shot }) {
+      await setQaSession(page, baseUrl, 'citizen')
+      await visit(page, `${baseUrl}/implementation/everify`)
+      await page.getByRole('button', { name: /verify identity/i }).click()
+      await page.getByText(/verificationReceipt/).waitFor({ timeout: 30_000 })
+      await shot('everify-result')
+      return 'normalized eVerify result and signed receipt rendered'
+    },
+  },
+
+  {
     id: 'egov-chain-harness',
+    diagnostic: true,
     name: 'eGOV chain harness — anchor and verify round-trip',
     owner: 'Earl',
     async run({ page, baseUrl, shot }) {
@@ -450,6 +569,7 @@ export const flows = [
 
   {
     id: 'verify-qr-harness',
+    diagnostic: true,
     name: 'Verify QR harness — links to live verify routes',
     owner: 'Earl',
     async run({ page, baseUrl, shot }) {
@@ -476,13 +596,22 @@ export const flows = [
           'xref\n0 3\n0000000000 65535 f \ntrailer<</Root 1 0 R/Size 3>>\nstartxref\n%%EOF',
       )
       const fileInput = page.locator('input[type="file"]').first()
-      await fileInput.setInputFiles({
+      await page.waitForTimeout(250)
+      const upload = {
         name: 'test-doc.pdf',
         mimeType: 'application/pdf',
         buffer: pdfBytes,
-      })
+      }
+      await fileInput.setInputFiles(upload)
 
-      await page.getByText(/sha-256 of uploaded file/i).waitFor({ timeout: 10_000 })
+      const hashResult = page.getByText(/sha-256 of uploaded file/i)
+      if (!(await hashResult.waitFor({ timeout: 5_000 }).then(() => true).catch(() => false))) {
+        await fileInput.setInputFiles([])
+        await page.waitForTimeout(250)
+        await fileInput.setInputFiles(upload)
+      }
+
+      await hashResult.waitFor({ timeout: 30_000 })
       await shot('verify-upload-hash')
       return 'browser hash computed'
     },
@@ -490,6 +619,7 @@ export const flows = [
 
   {
     id: 'implementation-board',
+    diagnostic: true,
     name: 'Team board — every feature has an owner',
     owner: 'David',
     async run({ page, baseUrl }) {

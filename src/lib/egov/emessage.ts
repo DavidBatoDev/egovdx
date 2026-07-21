@@ -32,7 +32,7 @@ export async function pushSms(
   mobile: string,
   message: string,
 ): Promise<EgovResult<SmsResult>> {
-  const number = normalizeMobile(mobile)
+  const requestedNumber = normalizeMobile(mobile)
   if (!message.trim()) throw new Error('SMS message is required')
 
   return callEgov(
@@ -40,6 +40,9 @@ export async function pushSms(
     async () => {
       const token = process.env.EGOV_EMESSAGE_API_TOKEN
       if (!token) throw new Error('EGOV_EMESSAGE_API_TOKEN is not set')
+      const testRecipient = process.env.EGOV_EMESSAGE_TEST_NUMBER
+      if (!testRecipient) throw new Error('EGOV_EMESSAGE_TEST_NUMBER is required for controlled live SMS')
+      const number = normalizeMobile(testRecipient)
       const raw = await egovFetch<Record<string, unknown>>('EMESSAGE', '/messaging/v1/sms/push', {
         method: 'POST',
         headers: authHeaders('EMESSAGE', token),
@@ -48,7 +51,7 @@ export async function pushSms(
       return normalizeSms(raw)
     },
     () => {
-      console.log(`[emessage:mock] accepted issuance message for ${number.slice(0, 4)}••••${number.slice(-3)}`)
+      console.log(`[emessage:mock] accepted issuance message for ${requestedNumber.slice(0, 4)}••••${requestedNumber.slice(-3)}`)
       return { messageId: 'mock-message-id', accepted: true }
     },
   )

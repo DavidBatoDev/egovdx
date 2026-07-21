@@ -59,14 +59,16 @@ are 0%.
 
 ## 1:10 – 1:45 · Act 1 · LGU Onboarding
 
-**Visual:** The eGovDX officer console. Sign in via **eGovPH SSO**.
+**Visual:** Start at `/`, use the **Officer console** role gateway, and sign in
+via **eGovPH SSO**. Do not open `/implementation` during the product demo.
 
 **Actions**
 1. Sign in — narrate that this is the same eGovPH account citizens use.
 2. Click **Register LGU**. Search "Marilao" — a real lookup against PSA
    geographic data, not a dropdown.
 3. Enter the official email. Register.
-4. Land on the dashboard: **"Marilao currently has 0 active eServices."**
+4. Land on the dashboard: **"0 configured eServices."** Click
+   **Create eService with AI**.
 
 > "Right now, if Marilao wants to digitise a permit, they hire contractors for
 > millions of pesos, or they wait months. Watch what this takes instead."
@@ -122,7 +124,8 @@ are 0%.
 **Visual:** Switch to the eGovPH app shell. Phone framing.
 
 **Actions**
-1. eGovPH dashboard → **LGUs** tab → search **Marilao**.
+1. Return to the `/` role gateway as a citizen, then open the native
+   `/citizen/services` catalog → **LGUs** tab → search **Marilao**.
 2. The Business Sanitation Permit **you just created** is already there.
 
    > "No deployment. No app release. It was published thirty seconds ago."
@@ -131,7 +134,8 @@ are 0%.
 4. **Face liveness check.** Real camera.
 
    > "Liveness is what replaces the barangay officer physically seeing you at
-   > the counter. We accept a session only at 95% confidence or above."
+   > the counter. eVerify only continues after its camera SDK returns a completed
+   > liveness session."
 
 5. **eVerify** — name, address, birthdate populate from PhilSys.
 
@@ -152,7 +156,8 @@ are 0%.
 **Actions**
 1. Switch to the officer. The request is in the Municipal Health Office queue,
    showing what was verified: liveness score, eVerify reference.
-2. **Approve.** Then, without any further clicks:
+2. **Approve and issue.** The same request row then exposes the PDF and public
+   verification actions, and without any further processing clicks:
    - the PDF generates — LGU letterhead, seal, control number, citizen's
      verified details, QR code
    - its SHA-256 hash is anchored on **eGOV chain**

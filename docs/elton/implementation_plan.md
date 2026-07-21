@@ -68,7 +68,7 @@ export async function searchPsgc(query: string): Promise<PsgcEntry[]>
 3. In `generatePayment`, obtain the API token only on the server and construct
    the required request body: one item with the supplied service description
    and amount; total `amount`; settlement template UUID; `txnid`; `redirect_url`
-   to `/track/{requestId}`; and the application callback URL.
+   to `/citizen/track/{requestId}`; and the application callback URL.
 4. Generate `digest` using `createHmac('sha256', apiToken)` over the exact
    string `${amount}|${txnid}`. Keep the amount representation identical in the
    payload and digest input to avoid a misleading 422 error.

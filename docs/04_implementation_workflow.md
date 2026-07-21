@@ -142,7 +142,7 @@ already cost us once.
 
 A feature graduates from harness to product when its status hits `ready`.
 
-1. Create the real route under `src/app/` (e.g. `src/app/apply/[serviceId]/`).
+1. Create the real route under `src/app/` (e.g. `src/app/citizen/apply/[serviceId]/`).
 2. Import the same `src/lib/` functions your harness calls. **Do not copy code
    out of the harness** — if you find yourself copying, the logic was in the
    wrong place and belongs in `src/lib/` first.
@@ -150,6 +150,11 @@ A feature graduates from harness to product when its status hits `ready`.
 4. Set status to `unified`.
 5. **Leave the harness in place.** It costs nothing and it's the fastest way to
    debug one integration when the full flow misbehaves at 3 AM.
+
+Harnesses are diagnostics, not product navigation. The public landing at `/`
+must connect the citizen, officer, and reviewer journeys through real routes.
+`npm run qa` exercises those product journeys by default; use
+`npm run qa:diagnostics` when isolating `/implementation/*` adapters.
 
 `/implementation` also happens to be useful on camera: it shows each eGovPH
 integration firing individually, which is a cleaner way to evidence integration

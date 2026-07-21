@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   Badge,
-  ButtonLink,
+  ButtonAnchor,
   Card,
   CardBody,
   CardHeader,
@@ -49,27 +49,27 @@ export default async function EgovSsoHarness() {
           action={<Badge tone={mode === 'mock' ? 'neutral' : 'success'}>{mode} mode</Badge>}
         />
         <CardBody className="flex flex-wrap gap-3">
-          <ButtonLink
+          <ButtonAnchor
             href="/api/auth/egov/login?persona=citizen&next=/implementation/egov-sso"
             variant="secondary"
           >
             Sign in as citizen
-          </ButtonLink>
-          <ButtonLink
+          </ButtonAnchor>
+          <ButtonAnchor
             href="/api/auth/egov/login?persona=officer&next=/implementation/egov-sso"
             variant="secondary"
           >
             Sign in as officer
-          </ButtonLink>
-          <ButtonLink
+          </ButtonAnchor>
+          <ButtonAnchor
             href="/api/auth/egov/login?persona=reviewer&next=/implementation/egov-sso"
             variant="secondary"
           >
             Sign in as reviewer
-          </ButtonLink>
-          <ButtonLink href="/api/auth/egov/logout" variant="ghost">
+          </ButtonAnchor>
+          <ButtonAnchor href="/api/auth/egov/logout" className="text-brand hover:bg-brand-soft">
             Sign out
-          </ButtonLink>
+          </ButtonAnchor>
         </CardBody>
       </Card>
 

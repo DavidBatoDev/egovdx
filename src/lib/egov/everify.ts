@@ -29,6 +29,21 @@ export type VerifiedIdentity = {
   philsysReference: string | null
   /** Authoritative eVerify transaction reference, when supplied. */
   everifyReference: string | null
+  /** eGovPH profile attributes available for service-form prefill. */
+  email: string | null
+  suffix: string | null
+  gender: string | null
+  nationality: string | null
+  street: string | null
+  barangay: string | null
+  municipality: string | null
+  province: string | null
+  region: string | null
+  country: string | null
+  postal: string | null
+  addressLine2: string | null
+  photoUrl: string | null
+  signatureUrl: string | null
 }
 
 export type EverifyQuery = {
@@ -109,6 +124,20 @@ export function normalizeVerifiedIdentity(raw: Record<string, unknown>): Verifie
     mobile: asString(p.mobileNumber ?? p.mobile ?? p.contactNumber) || null,
     philsysReference: reference,
     everifyReference: reference,
+    email: asString(p.email) || null,
+    suffix: asString(p.suffix) || null,
+    gender: asString(p.gender) || null,
+    nationality: asString(p.nationality) || null,
+    street: asString(p.street) || null,
+    barangay: asString(p.barangay) || null,
+    municipality: asString(p.municipality ?? p.cityMunicipality) || null,
+    province: asString(p.province) || null,
+    region: asString(p.region) || null,
+    country: asString(p.country) || null,
+    postal: asString(p.postal ?? p.postal_code) || null,
+    addressLine2: asString(p.address_line_2 ?? p.addressLine2) || null,
+    photoUrl: asString(p.photo ?? p.face_url) || null,
+    signatureUrl: asString(p.signature_url ?? p.signature) || null,
   }
 }
 
@@ -146,6 +175,20 @@ function mockIdentity(q: EverifyQuery): VerifiedIdentity {
     mobile: '+639171234567',
     philsysReference: '0000-0000-0000-0000',
     everifyReference: 'MOCK-EVERIFY-REFERENCE-0001',
+    email: 'juana.delacruz@example.com',
+    suffix: null,
+    gender: 'Female',
+    nationality: 'Filipino',
+    street: '24 Sampaguita St.',
+    barangay: 'Plainview',
+    municipality: 'Mandaluyong City',
+    province: null,
+    region: 'National Capital Region',
+    country: 'Philippines',
+    postal: '1550',
+    addressLine2: null,
+    photoUrl: null,
+    signatureUrl: null,
   }
 }
 

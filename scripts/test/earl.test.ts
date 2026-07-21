@@ -61,7 +61,6 @@ function supabase() {
 }
 
 const TEST_REQUEST_ID = 'dddddddd-0000-0000-0000-000000000099'
-const TEST_SERVICE_ID = 'cccccccc-0000-0000-0000-000000000001'
 
 async function ensureDocumentsBucket() {
   const db = supabase()
@@ -78,9 +77,13 @@ async function seedApprovedRequest() {
   await db.storage.from('documents').remove([`${TEST_REQUEST_ID}.pdf`])
   await db.from('request_events').delete().eq('request_id', TEST_REQUEST_ID)
   await db.from('requests').delete().eq('id', TEST_REQUEST_ID)
+  const { data: officer, error: officerError } = await db.from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+  if (officerError || !officer) throw new Error(officerError?.message ?? 'Demo officer is not assigned to an LGU')
+  const { data: service, error: serviceError } = await db.from('lgu_services').select('id').eq('lgu_id', officer.lgu_id).eq('status', 'published').gt('fee_amount', 0).limit(1).maybeSingle()
+  if (serviceError || !service) throw new Error(serviceError?.message ?? 'No paid published service available')
   const { error } = await db.from('requests').insert({
     id: TEST_REQUEST_ID,
-    lgu_service_id: TEST_SERVICE_ID,
+    lgu_service_id: service.id,
     citizen_name: 'JOSIE DELA CRUZ',
     citizen_mobile: '+639090000000',
     everify_payload: {
@@ -110,7 +113,9 @@ async function cleanupTestRequest() {
 async function main() {
   const secret = process.env.SESSION_SECRET
   if (!secret) throw new Error('SESSION_SECRET missing')
-  const token = await new SignJWT({ sub: 'demo-officer-sub', name: 'Maria Santos', role: 'officer', lguId: '22222222-2222-2222-2222-222222222222', mobile: '+639171234567' })
+  const { data: officer, error } = await supabase().from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').eq('role', 'officer').maybeSingle()
+  if (error || !officer) throw new Error(error?.message ?? 'Demo officer is not assigned to an LGU')
+  const token = await new SignJWT({ sub: 'demo-officer-sub', name: 'Maria Santos', role: 'officer', lguId: officer.lgu_id, mobile: '+639171234567' })
     .setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h').sign(new TextEncoder().encode(secret))
   officerCookie = `egovdx_session=${token}`
   console.log(`\nEarl tests — ${BASE}\n`)

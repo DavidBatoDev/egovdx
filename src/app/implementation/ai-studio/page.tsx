@@ -1,5 +1,5 @@
 import { Badge, Card, CardBody, CardHeader, PageHeader } from '@/components/ui'
-import StudioClient from '@/app/console/studio/studio-client'
+import StudioClient from '@/components/officer/studio-client'
 import { getFeature } from '../manifest'
 
 export default function AiStudioHarness() {

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
 import { Badge, SourceBadge } from '@/components/ui'
+import { getOfficerLguScope, type OfficerLguScope } from '@/lib/lgu-scope'
 
 export const metadata: Metadata = {
   title: 'eSee LGU — Configuration layer for eLGU',
@@ -17,6 +18,22 @@ export default async function RootLayout({
   // Reading the session here means every page gets the right nav without each
   // one having to ask. Cheap: it's a cookie read plus a JWT verify.
   const session = await getSession().catch(() => null)
+  let officerScope: OfficerLguScope | null = null
+  if (session?.role === 'officer' && session.lguId) {
+    try {
+      officerScope = await getOfficerLguScope(session.lguId)
+    } catch {
+      // A temporary database failure should not make the shared app shell fail.
+      officerScope = null
+    }
+  }
+  const workspaceName = officerScope
+    ? officerScope.barangayName
+      ? `Barangay ${officerScope.barangayName}`
+      : officerScope.kind === 'city'
+        ? `${officerScope.municipalityName} City`
+        : officerScope.municipalityName
+    : null
 
   return (
     <html lang="en" className="h-full antialiased">
@@ -41,13 +58,18 @@ export default async function RootLayout({
             </div>
 
             <nav className="flex items-center gap-1 text-sm">
+              {session?.role === 'citizen' ? (
+                <>
+                  <Link href="/citizen/services" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft sm:inline-flex">Services</Link>
+                  <Link href="/citizen/requests" className="hidden rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft md:inline-flex">My requests</Link>
+                </>
+              ) : null}
+
               {session?.role === 'officer' ? (
-                <Link
-                  href="/console"
-                  className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft"
-                >
-                  Officer console
-                </Link>
+                <>
+                  <Link href={officerScope?.canonicalBase ?? '/lgu'} className="rounded-sm px-3 py-1.5 font-bold text-brand hover:bg-brand-soft">LGU workspace</Link>
+                  {workspaceName ? <span className="hidden border-l border-border pl-3 text-sm font-semibold text-foreground lg:inline">{workspaceName}</span> : null}
+                </>
               ) : null}
 
               {session?.role === 'reviewer' ? (
@@ -58,6 +80,8 @@ export default async function RootLayout({
                   DICT review
                 </Link>
               ) : null}
+
+              {!session ? <Link href="/verify" className="hidden rounded-sm px-3 py-1.5 text-muted hover:bg-brand-soft sm:inline-flex">Verify</Link> : null}
 
               {session ? (
                 <>
@@ -74,12 +98,12 @@ export default async function RootLayout({
                   </a>
                 </>
               ) : (
-                <Link
+                <a
                   href="/signin"
                   className="rounded-sm bg-brand px-3 py-1.5 font-bold text-white hover:bg-brand-hover"
                 >
                   Sign in with eGovPH
-                </Link>
+                </a>
               )}
             </nav>
           </div>

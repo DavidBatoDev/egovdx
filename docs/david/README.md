@@ -12,16 +12,17 @@
 
 | Task | Status | Remaining |
 |---|---|---|
-| Credentials and probes | Implemented | Run the final authoritative seven-service probe with the current credentials and record status/response keys. Do not print tokens or PII. |
-| AI eService Studio | `unified` | Perform one controlled live eGov AI generation and one forced OpenAI fallback, then enable production live mode only if both behave as documented. |
+| Credentials and probes | Complete | The authoritative seven-service probe completed without printing tokens or PII. |
+| AI eService Studio | `unified` / live | Production generated a schema-valid service through `gpt-5.4-mini` after the eGov AI primary returned malformed content; 199 eGov AI credits were observed. |
 | Bounded validation and DICT review | `unified` | None. Both prompt and upload previews are revalidated before the transactional save. |
-| Paper form extraction | `unified` | Covered by the Studio upload flow; live extractor certification is part of the AI live check above. |
+| Paper form extraction | `unified` | Covered by the Studio upload flow and shared normalized generation pipeline. |
 | Supabase and Vercel deployment | Complete | Keep production variables synchronized after any integration-mode change. |
 
 The application is deployed at [egovdx.vercel.app](https://egovdx.vercel.app).
-Production deliberately remains in `EGOV_AI_MODE=mock` until the controlled
-live proof succeeds; the implementation already supports eGov AI → OpenAI →
-explicit error routing.
+Production uses `EGOV_AI_MODE=live`. The controlled proof exercised the intended
+eGov AI → OpenAI → explicit error routing: the primary response contained no
+valid JSON object, the `gpt-5.4-mini` fallback returned a schema-valid preview,
+and generation remained a no-write operation until officer confirmation.
 
 ---
 

@@ -64,12 +64,12 @@ export const FEATURES: Feature[] = [
     slug: 'landing',
     name: 'Marketing landing page',
     owner: 'Jasmin',
-    status: 'building',
+    status: 'unified',
     summary:
-      'DICT/LGU decision-maker landing page: hero, the bounded-config pitch, how-it-works, cost-benefit, and officer sign-in CTAs — built from the woven-band brand kit.',
+      'Public decision-maker landing page and citizen/officer/reviewer gateway into the unified product journeys.',
     dependsOn: ['brandkit'],
-    owns: ['src/components/landing/', 'src/app/implementation/landing/'],
-    provides: ['<LandingPage /> — drop onto a real route to unify'],
+    owns: ['src/components/landing/', 'src/app/page.tsx', 'src/app/implementation/landing/'],
+    provides: ['<LandingPage /> — public product entry at /'],
     apis: [],
   },
   {
@@ -93,7 +93,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Dynamic form rendered from lgu_services.form_fields, with eVerify prefill, document upload, and submission.',
     dependsOn: ['egov-shell', 'everify', 'egov-pay'],
-    owns: ['src/app/apply/', 'src/components/form/'],
+    owns: ['src/app/citizen/apply/', 'src/components/form/'],
     provides: ['<DynamicForm fields={FormField[]} />'],
     apis: [],
     act: 'Act 3',
@@ -158,7 +158,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Natural-language prompt in, a complete eService schema out: fields, fee rules, required docs, approval routing.',
     dependsOn: [],
-    owns: ['src/lib/studio/', 'src/lib/egov/ai.ts', 'src/app/console/studio/'],
+    owns: ['src/lib/studio/', 'src/lib/egov/ai.ts', 'src/components/officer/studio-client.tsx'],
     provides: ['generateService(prompt, lgu) → GeneratedService'],
     apis: ['eGov AI'],
     act: 'Act 2',
@@ -240,7 +240,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Register a real LGU against the PSA geographic reference, then land on its empty service dashboard.',
     dependsOn: ['egov-sso'],
-    owns: ['src/app/console/register/', 'src/app/api/lgus/', 'supabase/seed_psgc.sql'],
+    owns: ['src/app/lgu/register/', 'src/app/api/lgus/', 'supabase/seed_psgc.sql'],
     provides: ['searchPsgc(query) → PsgcEntry[]'],
     apis: [],
     act: 'Act 1',
@@ -253,7 +253,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Applies waivers, then charges the configured fee through eGovPay. A named stage in the core flow — cannot be dropped.',
     dependsOn: [],
-    owns: ['src/lib/egov/pay.ts', 'src/app/pay/', 'src/app/api/pay/'],
+    owns: ['src/lib/egov/pay.ts', 'src/app/citizen/pay/', 'src/app/api/pay/'],
     provides: ['generatePayment(), checkPayment(), voidPayment()'],
     apis: ['eGOV PAY'],
     act: 'Act 3',
@@ -266,7 +266,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Requests routed to the office the service names. Approving triggers issuance, anchoring, and the SMS.',
     dependsOn: ['egov-sso'],
-    owns: ['src/app/console/requests/', 'src/app/api/requests/'],
+    owns: ['src/components/officer/request-queue.tsx', 'src/app/api/requests/'],
     provides: ['approveRequest(id, officer)'],
     apis: [],
     act: 'Act 4',
@@ -292,7 +292,7 @@ export const FEATURES: Feature[] = [
     summary:
       'Per-service volume, completion rate, and time-to-issue for the LGU department head. CUTTABLE if time runs short.',
     dependsOn: ['approval-queue', 'brandkit'],
-    owns: ['src/app/console/analytics/'],
+    owns: ['src/components/officer/section-pages.tsx'],
     provides: [],
     apis: [],
     act: 'Act 2',

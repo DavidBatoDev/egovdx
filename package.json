@@ -9,6 +9,7 @@
     "lint": "eslint",
     "qa": "node scripts/qa/run.mjs",
     "qa:headless": "node scripts/qa/run.mjs --headless --slowmo 0",
+    "qa:diagnostics": "node scripts/qa/run.mjs --diagnostics",
     "test:earl": "tsx scripts/test/earl.test.ts",
     "test:elton": "tsx scripts/test/elton.test.ts",
     "test:jasmin": "tsx scripts/test/jasmin.test.ts",

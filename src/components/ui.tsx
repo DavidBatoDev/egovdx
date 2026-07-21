@@ -137,6 +137,15 @@ export function ButtonLink({
   return <Link {...props} className={cn(BUTTON_BASE, BUTTON_STYLES[variant], className)} />
 }
 
+/** Native anchor for downloads and non-Next endpoints that must not be prefetched. */
+export function ButtonAnchor({
+  variant = 'primary',
+  className,
+  ...props
+}: ComponentProps<'a'> & { variant?: ButtonVariant }) {
+  return <a {...props} className={cn(BUTTON_BASE, BUTTON_STYLES[variant], className)} />
+}
+
 // ------------------------------------------------------------------ badges
 
 type Tone = 'neutral' | 'brand' | 'success' | 'warn' | 'danger' | 'accent'
@@ -257,7 +266,7 @@ export function EmptyState({ title, description }: { title: string; description?
 // ------------------------------------------------------------------ tables
 
 /**
- * Tables are the primary data display for the officer console — dense and
+ * Tables are the primary data display for the officer workspace — dense and
  * scannable, favored over cards wherever rows share the same shape. Compose
  * with plain `<tr>`/`<th>`/`<td>` semantics via Th/Td so callers keep full
  * control of column content.

@@ -16,7 +16,7 @@ import { ButtonLink, cn } from '@/components/ui'
  */
 
 const SIGNIN = '/signin'
-const OFFICER_SIGNIN = '/signin?next=/console'
+const OFFICER_SIGNIN = '/signin?next=/lgu'
 
 // ------------------------------------------------------------------ helpers
 
@@ -114,7 +114,7 @@ const BENEFICIARIES = [
     headline: 'A day back, every time',
     blurb: 'Request from home and download the finished document — no commute, no line, no coming back tomorrow.',
     cta: 'Browse services',
-    href: '/',
+    href: '/citizen/services',
   },
   {
     who: 'For the barangay',
@@ -142,7 +142,7 @@ const LIMITS = [
 ]
 
 const GET_STARTED = [
-  { title: 'Officer console', body: 'Sign in and set up a service', href: OFFICER_SIGNIN },
+  { title: 'LGU workspace', body: 'Sign in and set up a service', href: OFFICER_SIGNIN },
   { title: 'DICT review', body: 'Review flagged services', href: '/review' },
   { title: 'Public verification', body: 'Check if a document is real', href: '/verify' },
 ]
@@ -539,7 +539,7 @@ export function LandingPage() {
             title="Product"
             links={[
               ['Officer console', OFFICER_SIGNIN],
-              ['Browse services', '/'],
+              ['Browse services', '/citizen/services'],
               ['Verify a document', '/verify'],
             ]}
           />

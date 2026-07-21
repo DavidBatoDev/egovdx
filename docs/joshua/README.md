@@ -10,18 +10,16 @@
 
 ## Current delivery status
 
-The identity contracts and production routes are unified. Mock officer,
+The identity contracts, production routes, and dedicated
+`/implementation/everify` diagnostic harness are unified. Mock officer,
 reviewer, and citizen sessions pass browser QA; the citizen application sends
 the SDK `session_id` to eVerify and persists the verified source honestly.
 
 Remaining required work:
 
-1. Add the dedicated `/implementation/everify` harness required by the project
-   definition of done. The real `/api/everify/verify` and citizen flow already
-   exercise the adapter, but the standalone harness is still missing.
-2. Mint a fresh, single-use `exchange_code` and run one controlled live chain:
+1. Mint a fresh, single-use `exchange_code` and run one controlled live chain:
    SSO profile → eVerify Face Liveness SDK → `/api/query`.
-3. Update the officer seed/binding with the returned live `data.uniqid`, then
+2. Update the officer seed/binding with the returned live `data.uniqid`, then
    enable each identity integration independently only after its check passes.
 
 Production stays in explicit mock mode until that certification is recorded.
