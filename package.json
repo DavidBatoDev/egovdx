@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qa": "node scripts/qa/run.mjs",
+    "qa:headless": "node scripts/qa/run.mjs --headless --slowmo 0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
@@ -27,6 +29,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
     "typescript": "^5"

@@ -32,6 +32,58 @@ npx next build        # ONLY as part of committing
 The reason is time, not principle: this is a deadline build, and a full
 production build repeated between every edit is minutes of nothing.
 
+## Browser QA
+
+Automated QA drives a real Chromium window through the app's user journeys.
+
+```bash
+npm run dev      # in another terminal first
+npm run qa       # headed, slowMo 800ms
+```
+
+**Headed at 800ms is the default on purpose.** A pass/fail line only tells you
+the DOM matched an assertion — not that an error boundary flashed, the layout
+collapsed at recording width, or a button is present but stacked under another
+element. This project's deliverable is a screen recording, so those are the
+defects that matter, and only a human watching the browser catches them. Use
+`npm run qa:headless` for a fast regression check.
+
+Results are **pass / pending / fail**. `pending` means the route 404s because
+nobody has built it yet, and does not fail the run — on a five-person parallel
+build, reporting unwritten features as failures trains everyone to ignore the
+report.
+
+**Add a flow when your feature lands:** `scripts/qa/flows.mjs`, one entry per
+user journey, with an `owner` matching `src/app/implementation/manifest.ts` so a
+failure names a person.
+
+**Always navigate with `visit()`, never bare `page.goto()`.** Playwright's
+`goto()` resolves happily on a 404, so a flow that only calls `goto()` and
+screenshots reports a green pass for a route that does not exist. That bug was
+in the first version of these flows. A QA harness that lies is worse than none.
+
+Full playbook: the `browser-qa` skill —
+`.claude/skills/browser-qa/SKILL.md` (Claude Code) and
+`.agents/skills/browser-qa/SKILL.md` (Codex). Both drive the same
+`scripts/qa/` code; only the prose is duplicated, because the two tools
+discover skills at different paths.
+
+## This is a working app, not a demo
+
+Every feature must accept input the demo script never mentions — an LGU nobody
+seeded, a prompt nobody rehearsed, a citizen who isn't in a fixture. Mock
+fallbacks are an outage safety net, not the primary path. If it only works on
+the rehearsed input, it isn't done.
+
+Task distribution and per-developer assignments: `docs/05_task_distribution.md`.
+Demo script: `docs/06_demo_script.md`.
+
+**`docs/API_Reference.md` is the authority on every eGovPH contract.** It
+supersedes the catalog in `docs/api_catalog_documentation_v2.md` and any shape
+inferred in code. Check it before touching an adapter — several services use
+custom auth headers rather than bearer tokens, and `authHeaders()` in
+`src/lib/egov/client.ts` already encodes which is which.
+
 ## Working on a feature
 
 Five people build in parallel. Features are developed in isolation at
