@@ -470,12 +470,19 @@ export const flows = [
         await page.getByRole('heading', { name: /ai-assisted setup/i }).waitFor()
         await page.getByRole('heading', { name: /let’s configure your eservice/i }).waitFor()
         await shot('studio-ai-welcome')
-        await page.getByRole('button', { name: /start interview/i }).click()
+        await page.locator('input[type="file"]').first().setInputFiles({
+          name: 'qa-official-template.pdf',
+          mimeType: 'application/pdf',
+          buffer: Buffer.from('%PDF-1.4\n% eGovDX QA official template\n%%EOF'),
+        })
+        await page.getByText(/nabasa at nasuri ko na/i).waitFor({ timeout: 45_000 })
         const answer = page.getByLabel('Your answer')
-        await answer.waitFor({ timeout: 45_000 })
+        await answer.waitFor()
         await answer.fill('Create a tricycle franchise renewal for municipal residents.')
         await page.getByRole('button', { name: /send answer/i }).click()
-        await page.getByText(/pinakamalapit na DICT template|maaaring mag-apply/i).first().waitFor({ timeout: 45_000 })
+        await page.getByText(/maaaring mag-apply/i).first().waitFor({ timeout: 45_000 })
+        if (await page.getByText(/pinakamalapit na DICT template|closest DICT template/i).count()) throw new Error('AI asked the officer to choose a similar DICT template')
+        await page.getByText(/official template/i).first().waitFor()
         await shot('studio-ai-interview')
         await visitOfficerSection(page, baseUrl, 'studio/manual')
         await page.getByRole('heading', { name: /build a citizen-ready eservice|manual service setup/i }).waitFor()

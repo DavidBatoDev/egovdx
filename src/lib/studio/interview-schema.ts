@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const interviewTopics = [
-  'description', 'template', 'eligibility', 'fields', 'documents',
+  'description', 'eligibility', 'fields', 'documents',
   'fee', 'waivers', 'office', 'review',
 ] as const
 
@@ -10,6 +10,20 @@ export type InterviewTopic = typeof interviewTopics[number]
 export const interviewMessageSchema = z.object({
   role: z.enum(['assistant', 'user']),
   content: z.string().min(1).max(4000),
+  attachment: z.object({
+    name: z.string().min(1).max(255),
+    type: z.string().min(1).max(200),
+    size: z.number().int().nonnegative(),
+  }).optional(),
+})
+
+export const templateAttachmentSchema = z.object({
+  name: z.string().min(1).max(255),
+  type: z.string().min(1).max(200),
+  size: z.number().int().nonnegative(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  status: z.enum(['analyzed', 'reattach_required']),
+  source: z.enum(['live', 'mock', 'fallback']),
 })
 
 const formFieldSchema = z.object({
@@ -52,11 +66,13 @@ export const interviewTurnSchema = z.object({
   draft: interviewDraftSchema,
   coveredTopics: z.array(z.enum(interviewTopics)),
   complete: z.boolean(),
+  requiredAction: z.enum(['upload_template']).nullable(),
 })
 
 export type InterviewMessage = z.infer<typeof interviewMessageSchema>
 export type InterviewDraft = z.infer<typeof interviewDraftSchema>
 export type InterviewTurn = z.infer<typeof interviewTurnSchema>
+export type TemplateAttachment = z.infer<typeof templateAttachmentSchema>
 
 export const emptyInterviewDraft: InterviewDraft = {
   purpose: null,

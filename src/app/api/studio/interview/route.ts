@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       messages: interviewMessageSchema.array().parse(body.messages ?? []),
       draft: interviewDraftSchema.parse(body.draft ?? emptyInterviewDraft),
       coveredTopics: Array.isArray(body.coveredTopics) ? body.coveredTopics.map(String) : [],
+      templateReady: body.templateReady === true,
     })
     return Response.json(turn)
   } catch (error) {

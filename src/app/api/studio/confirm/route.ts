@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth/session'
 import { parseGeneratedService } from '@/lib/studio/schema'
 import { saveGeneratedService } from '@/lib/studio/persistence'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -17,14 +17,20 @@ export async function POST(request: Request) {
     const allowed = new Set(['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
     if (!allowed.has(file.type)) return Response.json({ error: 'Only PDF and DOCX templates are supported' }, { status: 415 })
     if (file.size > 4 * 1024 * 1024) return Response.json({ error: 'Template must be 4 MB or smaller' }, { status: 413 })
+    const fileBytes = Buffer.from(await file.arrayBuffer())
+    const expectedTemplateHash = String(form.get('expectedTemplateHash') ?? '')
+    if (expectedTemplateHash && !/^[a-f0-9]{64}$/.test(expectedTemplateHash)) return Response.json({ error: 'Invalid analyzed template hash' }, { status: 400 })
+    if (expectedTemplateHash && createHash('sha256').update(fileBytes).digest('hex') !== expectedTemplateHash) {
+      return Response.json({ error: 'The attached template changed. Analyze this file again before submitting.' }, { status: 400 })
+    }
     const service = parseGeneratedService(JSON.parse(String(form.get('service') ?? '{}')))
     const extension = file.type === 'application/pdf' ? 'pdf' : 'docx'
     uploadedPath = `${session.lguId}/${randomUUID()}.${extension}`
     const db = supabaseAdmin()
-    let { error: uploadError } = await db.storage.from('service-templates').upload(uploadedPath, await file.arrayBuffer(), { contentType: file.type, upsert: false })
+    let { error: uploadError } = await db.storage.from('service-templates').upload(uploadedPath, fileBytes, { contentType: file.type, upsert: false })
     if (uploadError && /bucket not found|does not exist/i.test(uploadError.message)) {
       await db.storage.createBucket('service-templates', { public: false, fileSizeLimit: 4 * 1024 * 1024, allowedMimeTypes: [...allowed] })
-      ;({ error: uploadError } = await db.storage.from('service-templates').upload(uploadedPath, await file.arrayBuffer(), { contentType: file.type, upsert: false }))
+      ;({ error: uploadError } = await db.storage.from('service-templates').upload(uploadedPath, fileBytes, { contentType: file.type, upsert: false }))
     }
     if (uploadError) throw uploadError
     const saved = await saveGeneratedService({

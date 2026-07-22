@@ -10,13 +10,14 @@ import { ManualServiceClient } from './manual-service-client'
 import { WebsiteEditor } from './website-editor'
 import { getLguSiteEditorState } from '@/lib/lgu-site/data'
 import { listServicesForLgu } from '@/lib/data'
+import { studioAgentMode } from '@/lib/studio/agent-mode'
 
 export function OfficerStudioHub({ dashboardHref }: { dashboardHref: string }) {
   return <CreationHub baseHref={dashboardHref} />
 }
 
 export function OfficerAiStudio({ dashboardHref, lguId }: { dashboardHref: string; lguId: string }) {
-  return <div className="space-y-6"><PageHeader eyebrow="Create eService" title="AI-assisted setup" description="OpenAI asks the practical questions an LGU needs to answer, while DICT rules remain the final authority." /><AiInterviewClient baseHref={dashboardHref} lguId={lguId} /></div>
+  return <div className="space-y-6"><PageHeader eyebrow="Create eService" title="AI-assisted setup" description="OpenAI asks the practical questions an LGU needs to answer, while DICT rules remain the final authority." /><AiInterviewClient baseHref={dashboardHref} lguId={lguId} agentMode={studioAgentMode()} /></div>
 }
 
 export async function OfficerManualStudio({ dashboardHref, lguId, serviceId }: { dashboardHref: string; lguId: string; serviceId: string | null }) {
@@ -41,7 +42,7 @@ export async function OfficerWebsite({ lguId }: { lguId: string }) {
   if (error) throw error
   if (!lgu) throw new Error('LGU_NOT_FOUND')
   const services = allServices.filter((service) => service.status === 'published')
-  return <div className="space-y-6"><PageHeader eyebrow="LGU website" title="Website CMS" description="Brand your native eGovPH page, preview the complete citizen experience, then publish one safe snapshot." /><WebsiteEditor lgu={lgu} initialConfig={state.config} initialRevision={state.revision} publishedAt={state.publishedAt} services={services} /></div>
+  return <WebsiteEditor lgu={lgu} initialConfig={state.config} initialRevision={state.revision} publishedAt={state.publishedAt} services={services} />
 }
 
 export async function OfficerRequests({ session }: { session: Session }) {
