@@ -33,3 +33,33 @@ export function safeNext(next: string, fallback: string): string {
   if (!next.startsWith('/') || next.startsWith('//')) return fallback
   return next
 }
+
+export type AuthenticatedRole = 'citizen' | 'officer' | 'reviewer'
+
+/**
+ * Keep post-login navigation inside the signed-in role's route namespace.
+ *
+ * Old links used `/console` for officers. Treat those as `/lgu` so a cached
+ * sign-in URL cannot send an officer to a removed route. The `/lgu` entry page
+ * then resolves the officer's assigned city, municipality, or barangay URL.
+ */
+export function safeNextForRole(
+  next: string,
+  role: AuthenticatedRole,
+  fallback: string,
+): string {
+  const candidate = safeNext(next, fallback)
+
+  if (role === 'officer') {
+    if (candidate === '/console' || candidate.startsWith('/console/')) return '/lgu'
+    return candidate === '/lgu' || candidate.startsWith('/lgu/') ? candidate : fallback
+  }
+
+  if (role === 'reviewer') {
+    return candidate === '/review' || candidate.startsWith('/review/') ? candidate : fallback
+  }
+
+  return candidate === '/citizen' || candidate.startsWith('/citizen/')
+    ? candidate
+    : fallback
+}

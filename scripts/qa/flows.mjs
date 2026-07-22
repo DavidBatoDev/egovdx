@@ -352,6 +352,38 @@ export const flows = [
   },
 
   {
+    id: 'website-cms',
+    name: 'LGU website CMS — officer previews a bounded branded page',
+    owner: 'Elton',
+    async run({ page, baseUrl, shot }) {
+      const db = qaDb()
+      const { data: officer } = await db.from('officers').select('lgu_id').eq('egov_sub', 'demo-officer-sub').maybeSingle()
+      if (!officer?.lgu_id) throw new Error('Demo officer has no LGU for website CMS QA')
+      const { data: before } = await db.from('lgu_site_configs').select('*').eq('lgu_id', officer.lgu_id).maybeSingle()
+      try {
+        await setQaSession(page, baseUrl, 'officer')
+        await visitOfficerSection(page, baseUrl, 'website')
+        await page.getByRole('heading', { name: /website cms/i }).waitFor()
+        await page.getByLabel(/lgu tagline/i).fill('Serbisyong mabilis, ligtas, at para sa lahat')
+        await page.getByRole('heading', { name: /live preview/i }).waitFor()
+        await page.getByText(/live citizen preview/i).waitFor()
+        await page.getByRole('button', { name: /save draft/i }).click()
+        await page.getByText(/draft saved/i).waitFor()
+        await page.getByRole('button', { name: /publish website/i }).click()
+        await page.getByText(/website published/i).waitFor()
+        await shot('website-cms-published')
+        await visit(page, `${baseUrl}/citizen/lgus/${officer.lgu_id}`)
+        await page.getByText('Serbisyong mabilis, ligtas, at para sa lahat').waitFor()
+        await shot('website-cms-citizen-page')
+        return 'draft saved, atomically published, and rendered on the citizen LGU page'
+      } finally {
+        if (before) await db.from('lgu_site_configs').upsert(before, { onConflict: 'lgu_id' })
+        else await db.from('lgu_site_configs').delete().eq('lgu_id', officer.lgu_id)
+      }
+    },
+  },
+
+  {
     id: 'lgu-onboarding',
     name: 'LGU onboarding — officer can open PSA-backed registration',
     owner: 'Elton',
@@ -469,7 +501,7 @@ export const flows = [
 
   {
     id: 'studio',
-    name: 'AI Studio — prompt box accepts an unrehearsed service description',
+    name: 'eService creation hub — AI interview and manual builder render',
     owner: 'David',
     async run({ page, baseUrl, shot }) {
       await ensureStudioQaLgu()
@@ -477,25 +509,39 @@ export const flows = [
         await setQaSession(page, baseUrl, 'officer', STUDIO_QA_LGU)
         await visitOfficerSection(page, baseUrl, 'studio')
 
-        const prompt = page.locator('textarea').first()
-        await prompt.waitFor({ timeout: 30_000 })
-        await page.waitForTimeout(250)
-        await prompt.fill(
-          'Create a Tricycle Franchise Renewal for Marilao. Require OR/CR and a ' +
-            'barangay clearance. Charge a fee of 300 pesos. Route approvals to the ' +
-            'Municipal Transport Office.',
-        )
-        await page.getByRole('button', { name: 'Generate preview' }).click()
-        await page.getByText(/No validation findings|validation finding/i).first().waitFor({ timeout: 75_000 })
-        await shot('studio-preview')
-        await page.getByRole('button', { name: 'Confirm and submit' }).click()
-        await page.getByText(/Published|Sent to DICT review/).waitFor({ timeout: 20_000 })
-
-        const upload = page.locator('input[type=file]')
-        await upload.setInputFiles({ name: 'blank-tricycle-form.png', mimeType: 'image/png', buffer: Buffer.from('mock blank form for extractor QA') })
-        await page.getByText(/Model:/).waitFor({ timeout: 45_000 })
-        await shot('studio-upload-preview')
-        return 'unrehearsed prompt generated, confirmed, and blank form extracted in an isolated QA LGU'
+        await page.getByRole('heading', { name: /how would you like to begin/i }).waitFor()
+        await shot('studio-creation-hub')
+        await page.getByRole('link', { name: /start ai interview/i }).click()
+        await page.getByRole('heading', { name: /ai-assisted setup/i }).waitFor()
+        await page.getByRole('heading', { name: /let’s configure your eservice/i }).waitFor()
+        await shot('studio-ai-welcome')
+        await page.locator('input[type="file"]').first().setInputFiles({
+          name: 'qa-official-template.pdf',
+          mimeType: 'application/pdf',
+          buffer: Buffer.from('%PDF-1.4\n% eGovDX QA official template\n%%EOF'),
+        })
+        await Promise.race([
+          page.getByText(/Analyzed · qa-official-template\.pdf/i).waitFor({ timeout: 90_000 }),
+          page.locator('p[role="alert"]:not(:empty)').waitFor({ timeout: 90_000 }).then(async () => {
+            throw new Error(`Template analysis failed: ${await page.locator('p[role="alert"]:not(:empty)').innerText()}`)
+          }),
+        ])
+        await page.getByText('Live API', { exact: true }).first().waitFor()
+        const answer = page.getByLabel('Your answer')
+        await answer.waitFor()
+        await answer.fill('Create a tricycle franchise renewal for municipal residents.')
+        await page.getByRole('button', { name: /send answer/i }).click()
+        await page.getByText('1 of 8 topics', { exact: true }).waitFor({ timeout: 90_000 })
+        await page.getByText('Tricycle Franchise Renewal', { exact: true }).waitFor()
+        if (await page.getByText(/pinakamalapit na DICT template|closest DICT template/i).count()) throw new Error('AI asked the officer to choose a similar DICT template')
+        await page.getByText(/official template/i).first().waitFor()
+        await shot('studio-ai-interview')
+        await visitOfficerSection(page, baseUrl, 'studio/manual')
+        await page.getByRole('heading', { name: /build a citizen-ready eservice|manual service setup/i }).waitFor()
+        await page.getByRole('button', { name: /add field/i }).click()
+        await page.getByLabel(/field \d+ label/i).last().waitFor()
+        await shot('studio-manual-builder')
+        return 'creation hub, contextual AI interview, and manual field builder rendered'
       } finally {
         await cleanupStudioQaLgu()
       }

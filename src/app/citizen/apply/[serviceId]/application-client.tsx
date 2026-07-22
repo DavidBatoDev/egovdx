@@ -89,7 +89,7 @@ export function ApplicationClient({ draft, identityMock }: { draft: RequestWithS
 
   const documentsComplete = draft.service.required_docs.every((required) => documents.some((document) => document.requirement === required))
   return <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-    <PageHeader eyebrow={`${draft.service.lgu.name} · eGovPH service`} title={draft.service.template.name} description="Your verified identity is reused, so you only provide information government does not already hold." action={<Badge tone="brand">Draft</Badge>} />
+    <PageHeader eyebrow={`${draft.service.lgu.name} · eGovPH service`} title={draft.service.display_name || draft.service.template.name} description="Your verified identity is reused, so you only provide information government does not already hold." action={<Badge tone="brand">Draft</Badge>} />
     <Stepper steps={STEPS} current={step} />
     {error ? <Toast tone="danger">{error}</Toast> : null}{message ? <Toast>{message}</Toast> : null}
     {step === 0 ? <Card><CardHeader title="Verify your identity" /><CardBody><LivenessCheck requestId={draft.id} mock={identityMock} onVerified={(value, identitySource) => { setIdentity(value); setSource(identitySource); setStep(1) }} /></CardBody></Card> : null}

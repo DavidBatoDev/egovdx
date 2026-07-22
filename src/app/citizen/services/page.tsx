@@ -33,6 +33,7 @@ export default async function ServicesPage() {
     }
     current.services.push({
       id: service.id,
+      display_name: service.display_name,
       fee_amount: Number(service.fee_amount),
       waivers: service.waivers,
       required_docs: service.required_docs,

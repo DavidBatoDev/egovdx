@@ -58,7 +58,7 @@ async function sendIssuedNotification(requestId: string, actor: string, retryNot
   try {
     const result = await pushSms(
       request.citizen_mobile,
-      issuedSmsBody(request.service.template.name, request.control_number, verifyUrl(requestId)),
+      issuedSmsBody(request.service.display_name || request.service.template.name, request.control_number, verifyUrl(requestId)),
     )
     const sent = result.data.accepted
     await supabaseAdmin().from('requests').update({

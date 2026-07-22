@@ -246,6 +246,19 @@ export const FEATURES: Feature[] = [
     act: 'Act 1',
   },
   {
+    slug: 'lgu-site-cms',
+    name: 'LGU website CMS',
+    owner: 'Elton',
+    status: 'unified',
+    summary:
+      'Lets each LGU publish a branded native eGovPH page with banners, notices, quick links, accessible colors, and online services.',
+    dependsOn: ['lgu-onboarding', 'brandkit'],
+    owns: ['src/lib/lgu-site/', 'src/components/lgu-site/', 'src/app/api/lgu-site/'],
+    provides: ['LguSiteConfig, <LguSiteRenderer />, draft/publish CMS API'],
+    apis: [],
+    act: 'Act 1',
+  },
+  {
     slug: 'egov-pay',
     name: 'Fee assessment & payment',
     owner: 'Elton',

@@ -1,6 +1,6 @@
 import 'server-only'
 import { supabaseAdmin } from '@/lib/supabase/server'
-import type { GeneratedService, GenerationResult } from './generate'
+import type { GeneratedService } from './generate'
 import { validateService, type ServiceValidationFlag } from '@/lib/rules/validate'
 
 export async function validateGeneratedService(service: GeneratedService) {
@@ -16,9 +16,11 @@ export async function validateGeneratedService(service: GeneratedService) {
 export async function saveGeneratedService(args: {
   lguId: string
   service: GeneratedService
-  generation: Pick<GenerationResult, 'engine' | 'model'>
+  generation: { engine: string; model: string }
   sourcePrompt: string | null
-  generatedBy: 'ai' | 'upload'
+  generatedBy: 'ai' | 'upload' | 'manual'
+  docTemplatePath: string
+  supersedesServiceId?: string | null
 }): Promise<{ serviceId: string; status: 'flagged' | 'published'; flags: ServiceValidationFlag[] }> {
   const { flags } = await validateGeneratedService(args.service)
   const { data, error } = await supabaseAdmin().rpc('save_generated_service', {
@@ -29,6 +31,8 @@ export async function saveGeneratedService(args: {
     p_source_prompt: args.sourcePrompt,
     p_generated_by: args.generatedBy,
     p_generator_model: `${args.generation.engine}:${args.generation.model}`,
+    p_doc_template_path: args.docTemplatePath,
+    p_supersedes_service_id: args.supersedesServiceId ?? null,
   })
   if (error) throw error
   const saved = data?.[0]

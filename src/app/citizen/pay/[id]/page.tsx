@@ -10,5 +10,5 @@ export default async function PaymentPage({ params }: { params: Promise<{ id: st
   if (session.role !== 'citizen') redirect('/')
   const request = await getRequest(id)
   if (!request || request.citizen_sub !== session.sub) redirect('/')
-  return <PaymentClient requestId={id} serviceName={request.service.template.name} fee={Number(request.service.fee_amount)} waivers={request.service.waivers} initialStatus={request.fee_status} />
+  return <PaymentClient requestId={id} serviceName={request.service.display_name || request.service.template.name} fee={Number(request.service.fee_amount)} waivers={request.service.waivers} initialStatus={request.fee_status} />
 }

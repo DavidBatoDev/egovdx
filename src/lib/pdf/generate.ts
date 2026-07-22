@@ -112,7 +112,7 @@ export async function generateDocument(request: RequestWithService): Promise<Iss
 
   // ── document title ───────────────────────────────────────────────────────────
   y -= 28
-  const titleText = service.template.name.toUpperCase()
+  const titleText = (service.display_name || service.template.name).toUpperCase()
   const titleWidth = boldFont.widthOfTextAtSize(titleText, 16)
   page.drawText(titleText, {
     x: (width - titleWidth) / 2,
@@ -367,7 +367,7 @@ function buildBodyLines(
       size: 10,
     },
     { text: '' },
-    { text: service.template.name, size: 11, bold: true },
+    { text: service.display_name || service.template.name, size: 11, bold: true },
     { text: '' },
     {
       text: `The application has been duly reviewed and approved by the concerned office as of ${approvedOn}.`,

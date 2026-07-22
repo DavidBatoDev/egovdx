@@ -6,7 +6,7 @@ import {
   sessionCookieOptions,
   type Session,
 } from '@/lib/auth/session'
-import { decodeState, safeNext } from '@/lib/auth/state'
+import { decodeState, safeNextForRole } from '@/lib/auth/state'
 import {
   isMissingIdentityDirectory,
   resolveSsoRole,
@@ -81,7 +81,9 @@ export async function GET(req: NextRequest) {
   console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role} resolution=${resolution.source}`)
 
   const fallback = role === 'officer' ? '/lgu' : role === 'reviewer' ? '/review' : '/citizen/services'
-  const response = NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))
+  const response = NextResponse.redirect(
+    new URL(safeNextForRole(next, role, fallback), req.nextUrl.origin),
+  )
   response.cookies.set(
     SESSION_COOKIE,
     await createSessionCookie(session),

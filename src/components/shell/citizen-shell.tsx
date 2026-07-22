@@ -3,15 +3,30 @@ import { Tabs } from '@/components/ui'
 
 const ITEMS = [
   { href: '/citizen/services', label: 'Services' },
+  { href: '/citizen/lgus', label: 'LGUs' },
   { href: '/citizen/requests', label: 'My requests' },
 ]
 
 /**
- * The citizen journey is deliberately framed as the native eGovPH mobile app
- * for the demo. Every citizen route shares this shell, so navigation stays in
- * the phone instead of becoming a desktop website between screens.
+ * Citizen transactions use the native eGovPH mobile frame. Published LGU
+ * websites can opt into the wide surface because they are full public pages,
+ * while immersive screens supply their own navigation and scrolling.
  */
-export function CitizenShell({ active, children, immersive = false }: { active: string; children: ReactNode; immersive?: boolean }) {
+export function CitizenShell({
+  active,
+  children,
+  immersive = false,
+  wide = false,
+}: {
+  active: string
+  children: ReactNode
+  immersive?: boolean
+  wide?: boolean
+}) {
+  if (wide) {
+    return <div className="mx-auto max-w-6xl overflow-hidden rounded-md border border-border bg-surface"><div className="bg-brand-soft px-4 py-3"><p className="text-xs font-bold uppercase tracking-wide text-brand">eGovPH services</p><p className="font-display text-xl">Local government services</p></div><Tabs items={ITEMS} active={active} /><div className="space-y-6 p-4 sm:p-6">{children}</div></div>
+  }
+
   return (
     <div className="mx-auto w-full max-w-[430px] rounded-[2.5rem] border-[8px] border-slate-950 bg-slate-950 p-1 shadow-2xl">
       <div className="relative h-[860px] overflow-hidden rounded-[2rem] bg-surface">

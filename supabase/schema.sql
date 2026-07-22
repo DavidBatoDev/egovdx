@@ -9,6 +9,8 @@
 drop table if exists request_events   cascade;
 drop table if exists requests         cascade;
 drop table if exists lgu_control_sequences cascade;
+drop table if exists lgu_site_media cascade;
+drop table if exists lgu_site_configs cascade;
 drop table if exists validation_flags cascade;
 drop table if exists studio_generation_cache cascade;
 drop table if exists lgu_services     cascade;
@@ -53,6 +55,31 @@ create table egov_identities (
 );
 create index on egov_identities(email);
 
+create table lgu_site_configs (
+  lgu_id uuid primary key references lgus(id) on delete cascade,
+  draft_config jsonb not null default '{"branding":{"tagline":"","logoPath":null,"primaryColor":"#0032a0","accentColor":"#fdda25"},"banners":[],"quickLinks":[],"notices":[]}'::jsonb,
+  published_config jsonb,
+  draft_revision integer not null default 1 check (draft_revision > 0),
+  published_revision integer,
+  updated_by text,
+  updated_at timestamptz not null default now(),
+  published_by text,
+  published_at timestamptz
+);
+
+create table lgu_site_media (
+  id uuid primary key default gen_random_uuid(),
+  lgu_id uuid not null references lgus(id) on delete cascade,
+  storage_path text not null unique,
+  kind text not null check (kind in ('logo','banner')),
+  mime_type text not null check (mime_type in ('image/jpeg','image/png','image/webp')),
+  size_bytes integer not null check (size_bytes > 0 and size_bytes <= 5242880),
+  original_name text not null,
+  created_by text not null,
+  created_at timestamptz not null default now()
+);
+create index on lgu_site_media(lgu_id, created_at);
+
 -- ------------------------------------------------------------ officers
 -- eGovPH authenticates; this directory authorizes officer/reviewer access.
 -- A pre-provisioned officer has a NULL egov_sub and is bound once by matching
@@ -95,7 +122,10 @@ create table lgu_services (
   lgu_id            uuid not null references lgus(id) on delete cascade,
   template_id       uuid not null references service_templates(id),
   status            text not null default 'draft'
-                    check (status in ('draft','flagged','published','rejected')),
+                    check (status in ('draft','flagged','published','rejected','archived')),
+  display_name      text not null,
+  version           integer not null default 1,
+  supersedes_service_id uuid references lgu_services(id) on delete set null,
   fee_amount        numeric(10,2) not null default 0,
   waivers           jsonb not null default '[]'::jsonb,
   required_docs     jsonb not null default '[]'::jsonb,
@@ -112,10 +142,13 @@ create table lgu_services (
   submitted_at      timestamptz,
   published_at      timestamptz,
   created_at        timestamptz not null default now(),
-  unique (lgu_id, template_id)
 );
 create index on lgu_services(lgu_id);
 create index on lgu_services(status);
+create unique index lgu_services_one_published
+  on lgu_services(lgu_id, template_id) where status = 'published';
+create unique index lgu_services_one_pending
+  on lgu_services(lgu_id, template_id) where status in ('draft','flagged');
 
 -- ---------------------------------------------------- validation_flags
 -- Written by the automated validation pass. Unflagged submissions publish fast;

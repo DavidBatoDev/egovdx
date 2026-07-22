@@ -33,10 +33,10 @@ export function validateFormData(fields: FormField[], value: unknown): Record<st
 
 export async function getOrCreateDraft(serviceId: string, citizen: Session): Promise<RequestWithService> {
   const service = await getService(serviceId)
-  if (!service || service.status !== 'published') throw new Error('SERVICE_NOT_AVAILABLE')
   const db = supabaseAdmin()
   const { data: existing } = await db.from('requests').select('id').eq('lgu_service_id', serviceId).eq('citizen_sub', citizen.sub).eq('status', 'draft').maybeSingle()
   if (existing) return (await getRequest(existing.id))!
+  if (!service || service.status !== 'published') throw new Error('SERVICE_NOT_AVAILABLE')
   const { data, error } = await db.from('requests').insert({
     lgu_service_id: serviceId,
     citizen_sub: citizen.sub,
