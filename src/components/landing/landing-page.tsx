@@ -149,7 +149,14 @@ const GET_STARTED = [
 
 // --------------------------------------------------------------------- page
 
-export function LandingPage() {
+export function LandingPage({ liveSso = false }: { liveSso?: boolean }) {
+  const beneficiaries = liveSso
+    ? BENEFICIARIES.filter((tier) => tier.who === 'For the citizen')
+    : BENEFICIARIES
+  const getStarted = liveSso
+    ? GET_STARTED.filter((item) => item.title === 'Public verification')
+    : GET_STARTED
+
   return (
     // Full-bleed escape: the harness renders inside a centered max-w container
     // with px-4 py-8 padding. A landing page needs to reach the viewport edges
@@ -185,9 +192,11 @@ export function LandingPage() {
               so Filipinos can request and receive their documents from home, not from a line.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <ButtonLink href={OFFICER_SIGNIN} className="h-12 px-6 text-base">
-                Officer sign-in
-              </ButtonLink>
+              {!liveSso ? (
+                <ButtonLink href={OFFICER_SIGNIN} className="h-12 px-6 text-base">
+                  Officer sign-in
+                </ButtonLink>
+              ) : null}
               <ButtonLink href="#how" variant="secondary" className="h-12 px-6 text-base">
                 See how it works
               </ButtonLink>
@@ -302,7 +311,7 @@ export function LandingPage() {
 
             {/* Right — the three audiences, each a scannable card that links out. */}
             <div className="space-y-4">
-              {BENEFICIARIES.map((tier) => (
+              {beneficiaries.map((tier) => (
                 <Link
                   key={tier.who}
                   href={tier.href}
@@ -482,7 +491,7 @@ export function LandingPage() {
                 Get started
               </h2>
               <div className="space-y-3">
-                {GET_STARTED.map((item) => (
+                {getStarted.map((item) => (
                   <Link
                     key={item.title}
                     href={item.href}
@@ -504,22 +513,26 @@ export function LandingPage() {
               <Eyebrow>Onboard your LGU</Eyebrow>
               <h3 className="mt-2 font-display text-2xl text-foreground">Bring your barangay online</h3>
               <p className="mt-2 text-sm text-muted">
-                Sign in with your eGovPH account — your role is assigned by DICT.
+                {liveSso
+                  ? 'LGU onboarding starts from eGovPH after DICT assigns your role.'
+                  : 'Sign in with your eGovPH account — your role is assigned by DICT.'}
               </p>
-              <div className="mt-6 space-y-3">
-                <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
-                  Official name
+              {!liveSso ? (
+                <div className="mt-6 space-y-3">
+                  <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
+                    Official name
+                  </div>
+                  <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
+                    Official email
+                  </div>
+                  <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
+                    Your LGU or barangay
+                  </div>
+                  <ButtonLink href={OFFICER_SIGNIN} className="h-11 w-full text-base">
+                    Request onboarding
+                  </ButtonLink>
                 </div>
-                <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
-                  Official email
-                </div>
-                <div className="rounded-sm border border-border-input px-3 py-2 text-sm text-muted">
-                  Your LGU or barangay
-                </div>
-                <ButtonLink href={OFFICER_SIGNIN} className="h-11 w-full text-base">
-                  Request onboarding
-                </ButtonLink>
-              </div>
+              ) : null}
             </div>
           </div>
         </Section>
@@ -537,19 +550,15 @@ export function LandingPage() {
           </div>
           <FooterCol
             title="Product"
-            links={[
-              ['Officer console', OFFICER_SIGNIN],
-              ['Browse services', '/citizen/services'],
-              ['Verify a document', '/verify'],
-            ]}
+            links={liveSso
+              ? [['Browse services', '/citizen/services'], ['Verify a document', '/verify']]
+              : [['Officer console', OFFICER_SIGNIN], ['Browse services', '/citizen/services'], ['Verify a document', '/verify']]}
           />
           <FooterCol
             title="Learn more"
-            links={[
-              ['Implementation', '/implementation'],
-              ['DICT review', '/review'],
-              ['Sign in', SIGNIN],
-            ]}
+            links={liveSso
+              ? [['Implementation', '/implementation']]
+              : [['Implementation', '/implementation'], ['DICT review', '/review'], ['Sign in', SIGNIN]]}
           />
           <div className="space-y-3">
             <p className="text-sm font-bold text-white">Stay informed</p>

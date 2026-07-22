@@ -4,6 +4,7 @@ import Link from 'next/link'
 import './globals.css'
 import { getSession } from '@/lib/auth/session'
 import { Badge, SourceBadge } from '@/components/ui'
+import { egovMode } from '@/lib/egov/client'
 import { getOfficerLguScope, type OfficerLguScope } from '@/lib/lgu-scope'
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function RootLayout({
   // Reading the session here means every page gets the right nav without each
   // one having to ask. Cheap: it's a cookie read plus a JWT verify.
   const session = await getSession().catch(() => null)
+  const liveSso = egovMode('SSO') === 'live'
   let officerScope: OfficerLguScope | null = null
   if (session?.role === 'officer' && session.lguId) {
     try {
@@ -90,20 +92,24 @@ export default async function RootLayout({
                     <Badge tone="brand">{session.role}</Badge>
                     {session.ssoSource ? <SourceBadge source={session.ssoSource} /> : null}
                   </span>
-                  <a
-                    href="/api/auth/egov/logout"
-                    className="rounded-sm px-3 py-1.5 text-muted hover:bg-brand-soft"
-                  >
-                    Sign out
-                  </a>
+                  {!liveSso ? (
+                    <a
+                      href="/api/auth/egov/logout"
+                      className="rounded-sm px-3 py-1.5 text-muted hover:bg-brand-soft"
+                    >
+                      Sign out
+                    </a>
+                  ) : null}
                 </>
               ) : (
-                <a
-                  href="/signin"
-                  className="rounded-sm bg-brand px-3 py-1.5 font-bold text-white hover:bg-brand-hover"
-                >
-                  Sign in with eGovPH
-                </a>
+                !liveSso ? (
+                  <a
+                    href="/signin"
+                    className="rounded-sm bg-brand px-3 py-1.5 font-bold text-white hover:bg-brand-hover"
+                  >
+                    Sign in with eGovPH
+                  </a>
+                ) : null
               )}
             </nav>
           </div>

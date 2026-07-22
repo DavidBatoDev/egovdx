@@ -45,31 +45,39 @@ export default async function EgovSsoHarness() {
       <Card>
         <CardHeader
           title="Trigger"
-          description="Each button starts the same SSO flow. In live mode the persona is ignored and the role comes from the officers table."
+          description={mode === 'mock'
+            ? 'Each button uses a deterministic mock identity. The real role policy remains server-owned.'
+            : 'Live sign-in starts at the eGovPH-registered callback. This harness intentionally has no local sign-in or sign-out control in live mode.'}
           action={<Badge tone={mode === 'mock' ? 'neutral' : 'success'}>{mode} mode</Badge>}
         />
         <CardBody className="flex flex-wrap gap-3">
-          <ButtonAnchor
-            href="/api/auth/egov/login?persona=citizen&next=/implementation/egov-sso"
-            variant="secondary"
-          >
-            Sign in as citizen
-          </ButtonAnchor>
-          <ButtonAnchor
-            href="/api/auth/egov/login?persona=officer&next=/implementation/egov-sso"
-            variant="secondary"
-          >
-            Sign in as officer
-          </ButtonAnchor>
-          <ButtonAnchor
-            href="/api/auth/egov/login?persona=reviewer&next=/implementation/egov-sso"
-            variant="secondary"
-          >
-            Sign in as reviewer
-          </ButtonAnchor>
-          <ButtonAnchor href="/api/auth/egov/logout" className="text-brand hover:bg-brand-soft">
-            Sign out
-          </ButtonAnchor>
+          {mode === 'mock' ? (
+            <>
+              <ButtonAnchor
+                href="/api/auth/egov/login?persona=citizen&next=/implementation/egov-sso"
+                variant="secondary"
+              >
+                Sign in as citizen
+              </ButtonAnchor>
+              <ButtonAnchor
+                href="/api/auth/egov/login?persona=officer&next=/implementation/egov-sso"
+                variant="secondary"
+              >
+                Sign in as officer
+              </ButtonAnchor>
+              <ButtonAnchor
+                href="/api/auth/egov/login?persona=reviewer&next=/implementation/egov-sso"
+                variant="secondary"
+              >
+                Sign in as reviewer
+              </ButtonAnchor>
+              <ButtonAnchor href="/api/auth/egov/logout" className="text-brand hover:bg-brand-soft">
+                Sign out
+              </ButtonAnchor>
+            </>
+          ) : (
+            <p className="text-sm text-muted">Open this URL from eGovPH after it appends a fresh <code>exchange_code</code>.</p>
+          )}
         </CardBody>
       </Card>
 
@@ -87,7 +95,7 @@ export default async function EgovSsoHarness() {
             </pre>
           ) : (
             <p className="text-sm text-muted">
-              Not signed in. Use a button above.
+              {mode === 'mock' ? 'Not signed in. Use a button above.' : 'Not signed in. Complete the eGovPH handoff to this callback.'}
             </p>
           )}
         </CardBody>
@@ -111,10 +119,7 @@ export default async function EgovSsoHarness() {
             <code className="font-mono">requireRole(&apos;officer&apos;)</code> throws{' '}
             <code className="font-mono">UNAUTHENTICATED</code> or{' '}
             <code className="font-mono">FORBIDDEN</code> — catch it and redirect to{' '}
-            <Link href="/signin" className="text-brand underline">
-              /signin
-            </Link>
-            .
+            {mode === 'mock' ? <><Link href="/signin" className="text-brand underline">/signin</Link>.</> : ' the eGovPH-managed handoff.'}
           </p>
         </CardBody>
       </Card>

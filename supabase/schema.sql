@@ -13,6 +13,7 @@ drop table if exists validation_flags cascade;
 drop table if exists studio_generation_cache cascade;
 drop table if exists lgu_services     cascade;
 drop table if exists service_templates cascade;
+drop table if exists egov_identities  cascade;
 drop table if exists officers         cascade;
 drop table if exists lgus             cascade;
 
@@ -31,20 +32,47 @@ create table lgus (
 );
 create index on lgus(parent_id);
 
+-- ----------------------------------------------------- egov identities
+-- First successful SSO authentication automatically creates this record. The
+-- profile is eGovPH-owned: only the server callback updates it after SSO.
+create table egov_identities (
+  id          uuid primary key default gen_random_uuid(),
+  egov_sub    text unique not null,
+  full_name   text not null,
+  first_name  text not null,
+  middle_name text not null,
+  last_name   text not null,
+  suffix      text,
+  birthdate   date,
+  address     text,
+  email       text,
+  mobile      text,
+  source      text not null check (source in ('live','mock','fallback')),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index on egov_identities(email);
+
 -- ------------------------------------------------------------ officers
--- egov_sub is the subject identifier returned by eGovPH SSO. Role is resolved
--- from this table at callback time — SSO authenticates, this table authorizes.
+-- eGovPH authenticates; this directory authorizes officer/reviewer access.
+-- A pre-provisioned officer has a NULL egov_sub and is bound once by matching
+-- the eGovPH email and birth date returned at the first authenticated login.
 create table officers (
   id         uuid primary key default gen_random_uuid(),
-  egov_sub   text unique not null,
+  egov_sub   text unique,
   lgu_id     uuid references lgus(id) on delete cascade,
   full_name  text not null,
   position   text,
   office     text,
   role       text not null default 'officer' check (role in ('officer','reviewer')),
+  sso_email  text,
+  sso_birthdate date,
   created_at timestamptz not null default now()
 );
 create index on officers(egov_sub);
+create unique index officers_sso_profile_unique
+  on officers (lower(sso_email), sso_birthdate)
+  where sso_email is not null and sso_birthdate is not null;
 
 -- --------------------------------------------------- service_templates
 -- The DICT-approved base. LGUs configure ON TOP of these, never outside them.

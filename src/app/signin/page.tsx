@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { redirect } from 'next/navigation'
 import { Badge, ButtonAnchor, Card, CardBody } from '@/components/ui'
 import { egovMode } from '@/lib/egov/client'
 
@@ -19,6 +20,9 @@ export default async function SignInPage({
 }) {
   const { next = '', error } = await searchParams
   const mock = egovMode('SSO') === 'mock'
+  // Production users arrive only through the eGovPH-registered callback.
+  // Keep this local persona chooser out of the live agency site.
+  if (!mock) redirect('/')
   const q = (persona: string, fallback?: string) =>
     `/api/auth/egov/login?persona=${persona}&next=${encodeURIComponent(next || fallback || '')}`
 

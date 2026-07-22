@@ -126,7 +126,20 @@ export class NotBuiltError extends Error {
  * the false-green-check problem we refuse to ship in the product itself.
  */
 export async function visit(page, url, { path = new URL(url).pathname } = {}) {
-  const res = await page.goto(url, { waitUntil: 'domcontentloaded' })
+  let res
+  try {
+    res = await page.goto(url, { waitUntil: 'domcontentloaded' })
+  } catch (error) {
+    // Next server redirects occasionally abort the initiating navigation after
+    // the browser has already committed its destination. Confirm that final
+    // destination explicitly instead of treating a legitimate redirect as a
+    // pass without a response check.
+    if (!(error instanceof Error) || !error.message.includes('net::ERR_ABORTED')) throw error
+    await page.waitForLoadState('domcontentloaded')
+    const settledUrl = page.url()
+    if (!settledUrl || settledUrl === 'about:blank') throw error
+    res = await page.request.get(settledUrl)
+  }
   const status = res?.status() ?? 0
 
   if (status === 404) throw new NotBuiltError(path, status)
@@ -202,8 +215,8 @@ export const flows = [
       }
       // The login route redirects, so check where we ended up AND that the
       // destination actually rendered — a redirect into a 404 is not a pass.
-      const res = await page.goto(`${baseUrl}/api/auth/egov/login?persona=officer`, {
-        waitUntil: 'domcontentloaded',
+      const res = await visit(page, `${baseUrl}/api/auth/egov/login?persona=officer`, {
+        path: '/api/auth/egov/login',
       })
 
       const url = page.url()
@@ -228,6 +241,10 @@ export const flows = [
     name: 'SSO — citizen signs in and lands on the service directory',
     owner: 'Joshua',
     async run({ page, baseUrl, shot }) {
+      if (process.env.EGOV_SSO_MODE !== 'mock') {
+        return 'skipped: mock persona journey requires EGOV_SSO_MODE=mock'
+      }
+      await page.setViewportSize({ width: 390, height: 844 })
       await visit(page, `${baseUrl}/signin`)
       await page.getByRole('link', { name: /browse my lgu|continue as a citizen/i }).click()
       await page.waitForLoadState('domcontentloaded')
@@ -239,11 +256,39 @@ export const flows = [
       if (pathname !== '/citizen/services') {
         throw new Error(`Citizen landed on ${pathname}, expected /citizen/services`)
       }
-      await page.getByRole('heading', { name: /request a local government document online/i }).waitFor()
-      await page.getByText('citizen', { exact: true }).waitFor()
+      await page.getByRole('button', { name: /open lgu services/i }).click()
+      await page.getByRole('heading', { name: /my local government/i }).waitFor()
       await page.getByRole('link', { name: /sign out/i }).waitFor()
       await shot('citizen-signed-in')
       return 'citizen session established at /citizen/services'
+    },
+  },
+
+  {
+    id: 'sso-live-boundary',
+    name: 'SSO — live mode exposes only the eGovPH handoff, not local auth controls',
+    owner: 'Joshua',
+    async run({ page, baseUrl, shot }) {
+      if (process.env.EGOV_SSO_MODE !== 'live') {
+        return 'skipped: run with EGOV_SSO_MODE=live to verify the production SSO boundary'
+      }
+
+      await page.setViewportSize({ width: 768, height: 1024 })
+      await visit(page, `${baseUrl}/signin`, { path: '/signin' })
+      if (new URL(page.url()).pathname !== '/') {
+        throw new Error(`Live /signin resolved to ${page.url()}, expected the public home page`)
+      }
+      if (await page.getByRole('link', { name: /sign in/i }).count()) {
+        throw new Error('Live shell still exposes a local sign-in control')
+      }
+      if (await page.getByRole('link', { name: /officer sign-in/i }).count()) {
+        throw new Error('Live landing page still exposes an officer sign-in control')
+      }
+      if (await page.getByRole('link', { name: /sign out/i }).count()) {
+        throw new Error('Live shell still exposes a local sign-out control')
+      }
+      await shot('live-sso-boundary')
+      return 'local sign-in and sign-out controls are hidden at tablet width'
     },
   },
 

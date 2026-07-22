@@ -1,14 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { exchangeCode } from '@/lib/egov/sso'
-import { supabaseAdmin } from '@/lib/supabase/server'
 import {
   createSessionCookie,
   SESSION_COOKIE,
   sessionCookieOptions,
   type Session,
-  type SessionRole,
 } from '@/lib/auth/session'
 import { decodeState, safeNext } from '@/lib/auth/state'
+import {
+  isMissingIdentityDirectory,
+  resolveSsoRole,
+  syncEgovIdentity,
+} from '@/lib/auth/egov-identity'
 
 export const runtime = 'nodejs'
 
@@ -33,28 +36,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/signin?error=sso_unavailable', req.nextUrl.origin))
   }
 
-  // Roles come from the database, so an unreachable database means we cannot
-  // say what this person is allowed to do. Failing closed with a clear message
-  // beats defaulting to 'citizen' — a silent role downgrade looks like a
-  // permissions bug and sends someone hunting in the wrong place.
-  let officer: { role: string; lgu_id: string | null; full_name: string } | null
+  // The identity directory is the durable record of an SSO user. Roles remain
+  // server-owned: exact opt-in sandbox identities or the officer directory,
+  // never a persona value or a browser-submitted role.
+  let resolution: Awaited<ReturnType<typeof resolveSsoRole>>
   try {
-    const { data, error } = await supabaseAdmin()
-      .from('officers')
-      .select('role, lgu_id, full_name')
-      .eq('egov_sub', profile.sub)
-      .maybeSingle()
-
-    if (error) throw new Error(error.message)
-    officer = data
+    try {
+      await syncEgovIdentity(profile, source)
+    } catch (err) {
+      // A developer who has not applied the new migration still needs mock SSO
+      // for all other implementation harnesses. Live mode remains fail-closed:
+      // it must persist the provider-owned identity before creating a session.
+      if (source !== 'mock' || !isMissingIdentityDirectory(err)) throw err
+      console.warn('[sso:mock] egov_identities is unavailable; skipping mock-only profile persistence')
+    }
+    resolution = await resolveSsoRole(profile)
   } catch (err) {
-    console.error('[sso] officer lookup failed:', err)
+    console.error('[sso] identity directory failed:', err)
     return NextResponse.redirect(
       new URL('/signin?error=database_unavailable', req.nextUrl.origin),
     )
   }
 
-  const role: SessionRole = (officer?.role as SessionRole) ?? 'citizen'
+  const { role, officer } = resolution
 
   const session: Session = {
     sub: profile.sub,
@@ -74,7 +78,7 @@ export async function GET(req: NextRequest) {
 
   // Logged so that after a first real SSO login you can copy the subject into
   // the officers table:  update officers set egov_sub = '<sub>' where ...
-  console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role}`)
+  console.log(`[sso:${source}] signed in sub=${profile.sub} role=${role} resolution=${resolution.source}`)
 
   const fallback = role === 'officer' ? '/lgu' : role === 'reviewer' ? '/review' : '/citizen/services'
   const response = NextResponse.redirect(new URL(safeNext(next, fallback), req.nextUrl.origin))

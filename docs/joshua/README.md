@@ -19,8 +19,9 @@ Remaining required work:
 
 1. Mint a fresh, single-use `exchange_code` and run one controlled live chain:
    SSO profile → eVerify Face Liveness SDK → `/api/query`.
-2. Update the officer seed/binding with the returned live `data.uniqid`, then
-   enable each identity integration independently only after its check passes.
+2. Apply `supabase/migrations/20260722_egov_identity_directory.sql`, register
+   the final HTTPS callback with eGovPH, then enable each identity integration
+   independently only after its check passes.
 
 Production stays in explicit mock mode until that certification is recorded.
 
@@ -91,6 +92,37 @@ element, no client ID, no browser flow needed to test the whole server-side
 chain. **Mint a fresh code per attempt** — they're single-use, and reusing one
 returns `422`, which looks like a credentials bug but isn't.
 
+### Test identities, roles, and the registered callback
+
+For controlled live integration testing only, set
+`EGOV_SSO_TEST_ROLE_OVERRIDES=enabled`. The server matches both the SSO email
+and normalized full name, never a role provided by the browser:
+
+| eGovPH test identity | Assigned role |
+| --- | --- |
+| Josie Santos Dela Cruz · `josie@yopmail.com` | citizen |
+| Jose Cruz Dela Pena III · `josie01@yopmail.com` | citizen |
+| Arnel Dela Cruz II · `josie02@yopmail.com` | citizen |
+| John Garcia Reyes Jr. · `josie03@yopmail.com` | officer |
+| Josielyn Ramos Mendoza · `josie04@yopmail.com` | officer |
+
+Leave that flag unset for ordinary deployments. The normal resolution order is
+an existing `officers.egov_sub`, then a pre-provisioned officer matched by its
+stored eGov email and birth date (which is bound to `uniqid` on first login),
+then citizen. Every successful login also upserts the eGovPH-owned identity
+record; the app has no profile editor.
+
+Register this exact callback with eGovPH once the deployment domain is known:
+
+```
+https://<deployment-domain>/api/auth/egov/callback
+```
+
+`NEXT_PUBLIC_APP_URL` must be the same HTTPS origin. In live mode the app hides
+local sign-in and sign-out controls because the provider owns authentication;
+mock mode retains them for QA. eGovPH has not documented a single-logout API,
+so a true provider logout remains unavailable rather than being implied.
+
 ### What the returned token tells you
 
 The `access_token` is a readable JWT. From the documented sample:
@@ -120,7 +152,8 @@ the documented snake_case name fields. Preserve the raw payload for audit.
 
 ### Keep working
 
-- `src/lib/auth/session.ts` and the role lookup are correct — don't rewrite them.
+- `src/lib/auth/session.ts` exposes only profile data returned from SSO; do not
+  create browser-editable copies of identity fields.
 - Keep mock mode working. `?persona=officer|reviewer|citizen` is how the other
   four sign in while you're mid-refactor. **Breaking mock mode blocks everyone.**
 - Test account: `josie@yopmail.com`
@@ -251,7 +284,12 @@ apply form until `VerifiedIdentity` is fixed.
 - [x] `POST /api/partner/sso_authentication` sends only the resulting bearer
   token and no request body.
 - [x] Normalize `data.uniqid`, documented profile fields, and the raw payload;
-  retain the existing officer lookup and local role/session behavior.
+  sync the server-owned identity record, bind pre-provisioned officers by
+  eGovPH email plus birth date, and establish the local role/session.
+- [x] Add opt-in hardcoded roles for the five supplied eGovPH test identities;
+  no browser value can choose a role.
+- [x] Hide local sign-in/sign-out and profile editing in live mode; retain mock
+  controls only for the test harness.
 - [x] Confirm officer, reviewer, and citizen mock personas still sign in.
 
 ### 2. Face liveness

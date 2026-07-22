@@ -84,13 +84,34 @@ export type PsgcEntry = {
 
 export type Officer = {
   id: string
-  egov_sub: string
+  egov_sub: string | null
   lgu_id: string | null
   full_name: string
   position: string | null
   office: string | null
   role: OfficerRole
+  /** Server-managed eGovPH identity binding fields; never browser editable. */
+  sso_email: string | null
+  sso_birthdate: string | null
   created_at: string
+}
+
+/** A profile supplied by eGovPH and refreshed only at successful SSO login. */
+export type EgovIdentity = {
+  id: string
+  egov_sub: string
+  full_name: string
+  first_name: string
+  middle_name: string
+  last_name: string
+  suffix: string | null
+  birthdate: string | null
+  address: string | null
+  email: string | null
+  mobile: string | null
+  source: ProviderSource
+  created_at: string
+  updated_at: string
 }
 
 export type ServiceTemplate = {
@@ -259,7 +280,14 @@ export type Database = {
         Update: Partial<PsgcEntry>
         Relationships: []
       }
-      officers: Table<Officer, Insertable<Officer, 'lgu_id' | 'position' | 'office' | 'role'>>
+      egov_identities: Table<
+        EgovIdentity,
+        Insertable<EgovIdentity, 'suffix' | 'birthdate' | 'address' | 'email' | 'mobile' | 'updated_at'>
+      >
+      officers: Table<
+        Officer,
+        Insertable<Officer, 'egov_sub' | 'lgu_id' | 'position' | 'office' | 'role' | 'sso_email' | 'sso_birthdate'>
+      >
       service_templates: Table<
         ServiceTemplate,
         Insertable<ServiceTemplate, 'description' | 'base_fields' | 'allowed_rules' | 'max_fee'>
