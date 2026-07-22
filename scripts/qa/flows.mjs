@@ -475,12 +475,19 @@ export const flows = [
           mimeType: 'application/pdf',
           buffer: Buffer.from('%PDF-1.4\n% eGovDX QA official template\n%%EOF'),
         })
-        await page.getByText(/nabasa at nasuri ko na/i).waitFor({ timeout: 45_000 })
+        await Promise.race([
+          page.getByText(/Analyzed · qa-official-template\.pdf/i).waitFor({ timeout: 90_000 }),
+          page.locator('p[role="alert"]:not(:empty)').waitFor({ timeout: 90_000 }).then(async () => {
+            throw new Error(`Template analysis failed: ${await page.locator('p[role="alert"]:not(:empty)').innerText()}`)
+          }),
+        ])
+        await page.getByText('Live API', { exact: true }).first().waitFor()
         const answer = page.getByLabel('Your answer')
         await answer.waitFor()
         await answer.fill('Create a tricycle franchise renewal for municipal residents.')
         await page.getByRole('button', { name: /send answer/i }).click()
-        await page.getByText(/maaaring mag-apply/i).first().waitFor({ timeout: 45_000 })
+        await page.getByText('1 of 8 topics', { exact: true }).waitFor({ timeout: 90_000 })
+        await page.getByText('Tricycle Franchise Renewal', { exact: true }).waitFor()
         if (await page.getByText(/pinakamalapit na DICT template|closest DICT template/i).count()) throw new Error('AI asked the officer to choose a similar DICT template')
         await page.getByText(/official template/i).first().waitFor()
         await shot('studio-ai-interview')

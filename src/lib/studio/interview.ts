@@ -41,11 +41,12 @@ export async function continueServiceInterview(input: {
   })
   if (!response.output_parsed) throw new Error('OpenAI did not return a usable interview turn')
   const turn = interviewTurnSchema.parse(response.output_parsed)
-  const finalized = finalizeTurn(messages, turn.draft, input.coveredTopics, input.templateReady)
+  const reconciledDraft = reconcileOfficerAnswer(messages, turn.draft, input.coveredTopics)
+  const finalized = finalizeTurn(messages, reconciledDraft, input.coveredTopics, input.templateReady)
   const useAgentMessage = !finalized.requiredAction
     && turn.nextTopic === finalized.nextTopic
-    && isSafeAgentMessage(turn.assistantMessage, turn.draft.templateCode)
-  return { ...turn, ...finalized, assistantMessage: useAgentMessage ? turn.assistantMessage : finalized.assistantMessage, model, source: 'live' }
+    && isSafeAgentMessage(turn.assistantMessage, reconciledDraft.templateCode)
+  return { ...turn, ...finalized, draft: reconciledDraft, assistantMessage: useAgentMessage ? turn.assistantMessage : finalized.assistantMessage, model, source: 'live' }
 }
 
 export function interviewInstructions(draft: InterviewDraft, covered: string[], templateReady: boolean) {
@@ -151,6 +152,17 @@ function applyMockAnswer(draft: InterviewDraft, topic: InterviewTopic | null, an
     next.approvalOffice = answer.trim()
   }
   return next
+}
+
+function reconcileOfficerAnswer(messages: InterviewMessage[], draft: InterviewDraft, coveredInput: string[]): InterviewDraft {
+  const topic = interviewTopics.find((item) => !coveredInput.includes(item)) ?? null
+  const last = messages.at(-1)
+  if (topic !== 'description' || last?.role !== 'user' || last.attachment) return draft
+  return {
+    ...draft,
+    name: serviceNameFromDescription(last.content),
+    purpose: last.content.trim(),
+  }
 }
 
 function serviceNameFromDescription(description: string) {
